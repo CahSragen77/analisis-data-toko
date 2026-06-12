@@ -1,12 +1,12 @@
-// Dashboard Utama - Full Version
+// Dashboard Utama - Full Version (FIXED - No Recursion Error)
 let transTable, saleTable, memberTable, productTable, eodTable;
 let transChart, paymentChart;
 
 $(document).ready(function() {
-    console.log("Dashboard siap!");
+    console.log("✅ Dashboard siap - versi fixed");
     initDataTables();
     
-    // Event Upload - FIXED
+    // Event Upload
     $('#uploadArea').on('click', function() {
         $('#sqlUpload').click();
     });
@@ -28,14 +28,25 @@ $(document).ready(function() {
         $('#' + $(this).data('tab')).addClass('active');
     });
     
-    // Cek data dari localStorage (jika sebelumnya sudah upload)
+    // Event Export All (FIXED - ditempatkan di dalam ready)
+    $('#exportAllBtn').on('click', function() {
+        if (window.parsedData) {
+            exportAllToExcel(window.parsedData);
+        } else {
+            showToast('Tidak ada data untuk diekspor', 'danger');
+        }
+    });
+    
+    // Cek data dari localStorage
     const savedData = localStorage.getItem('amandamart_data');
     if (savedData) {
         try {
             const parsed = JSON.parse(savedData);
             updateDashboard(parsed);
             showToast('Data dari sesi sebelumnya dimuat', 'info');
-        } catch(e) {}
+        } catch(e) {
+            console.error("Error load saved data:", e);
+        }
     }
 });
 
@@ -74,27 +85,53 @@ async function handleFileUpload(event) {
         window.parsedData = parsed;
         
     } catch (error) {
-        console.error(error);
+        console.error("Upload error:", error);
         showToast('❌ Gagal membaca file SQL. Periksa format file.', 'danger');
     }
 }
 
 function updateDashboard(data) {
     // Update stat cards
-    $('#statTrans').text(data.c_trans.length);
-    $('#statSale').text(data.c_tsale.length);
-    $('#statMember').text(data.m_cust.length);
-    $('#statProd').text(data.m_loader.length);
+    $('#statTrans').text(data.c_trans.length || 0);
+    $('#statSale').text(data.c_tsale.length || 0);
+    $('#statMember').text(data.m_cust.length || 0);
+    $('#statProd').text(data.m_loader.length || 0);
     
     // Update charts
-    updateCharts(data.c_tsale);
+    if (data.c_tsale && data.c_tsale.length > 0) {
+        updateCharts(data.c_tsale);
+    }
     
-    // Update tables
-    transTable.clear().rows.add(data.c_trans).draw();
-    saleTable.clear().rows.add(data.c_tsale).draw();
-    memberTable.clear().rows.add(data.m_cust).draw();
-    productTable.clear().rows.add(data.m_loader).draw();
-    eodTable.clear().rows.add(data.cek_eod).draw();
+    // Update tables (dengan pengecekan data kosong)
+    if (transTable && data.c_trans) {
+        transTable.clear();
+        transTable.rows.add(data.c_trans);
+        transTable.draw();
+    }
+    
+    if (saleTable && data.c_tsale) {
+        saleTable.clear();
+        saleTable.rows.add(data.c_tsale);
+        saleTable.draw();
+    }
+    
+    if (memberTable && data.m_cust) {
+        memberTable.clear();
+        memberTable.rows.add(data.m_cust);
+        memberTable.draw();
+    }
+    
+    if (productTable && data.m_loader) {
+        productTable.clear();
+        productTable.rows.add(data.m_loader);
+        productTable.draw();
+    }
+    
+    if (eodTable && data.cek_eod) {
+        eodTable.clear();
+        eodTable.rows.add(data.cek_eod);
+        eodTable.draw();
+    }
 }
 
 function updateCharts(salesData) {
@@ -109,65 +146,118 @@ function updateCharts(salesData) {
     const labels = Array.from(dateMap.keys()).sort();
     const counts = labels.map(l => dateMap.get(l));
     
-    if (transChart) transChart.destroy();
-    const ctx1 = document.getElementById('transChart').getContext('2d');
-    transChart = new Chart(ctx1, {
-        type: 'line',
-        data: { labels: labels, datasets: [{ label: 'Jumlah Transaksi', data: counts, borderColor: '#2a5298', tension: 0.3, fill: true, backgroundColor: 'rgba(42,82,152,0.05)' }] },
-        options: { responsive: true, maintainAspectRatio: true }
-    });
+    // Chart Transaksi (Line Chart)
+    const ctx1 = document.getElementById('transChart');
+    if (ctx1) {
+        if (transChart) transChart.destroy();
+        transChart = new Chart(ctx1, {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'Jumlah Transaksi', 
+                    data: counts, 
+                    borderColor: '#2a5298', 
+                    tension: 0.3, 
+                    fill: true, 
+                    backgroundColor: 'rgba(42,82,152,0.05)' 
+                }] 
+            },
+            options: { responsive: true, maintainAspectRatio: true }
+        });
+    }
     
-    // Payment method chart (demo)
-    if (paymentChart) paymentChart.destroy();
-    const ctx2 = document.getElementById('paymentChart').getContext('2d');
-    paymentChart = new Chart(ctx2, {
-        type: 'doughnut',
-        data: { labels: ['Cash', 'QRIS', 'Debit'], datasets: [{ data: [65, 25, 10], backgroundColor: ['#198754', '#0dcaf0', '#ffc107'] }] },
-        options: { responsive: true }
-    });
+    // Payment method chart (doughnut) - Demo data
+    const ctx2 = document.getElementById('paymentChart');
+    if (ctx2) {
+        if (paymentChart) paymentChart.destroy();
+        paymentChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: { 
+                labels: ['Cash', 'QRIS', 'Debit'], 
+                datasets: [{ 
+                    data: [65, 25, 10], 
+                    backgroundColor: ['#198754', '#0dcaf0', '#ffc107'] 
+                }] 
+            },
+            options: { responsive: true }
+        });
+    }
 }
 
+// ======================= EXPORT TO EXCEL =======================
+function exportAllToExcel(data) {
+    try {
+        const wb = XLSX.utils.book_new();
+        
+        if (data.c_trans && data.c_trans.length > 0) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_trans), 'Transaksi');
+        }
+        if (data.c_tsale && data.c_tsale.length > 0) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_tsale), 'Penjualan');
+        }
+        if (data.m_cust && data.m_cust.length > 0) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_cust), 'Member');
+        }
+        if (data.m_loader && data.m_loader.length > 0) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_loader), 'Produk');
+        }
+        if (data.cek_eod && data.cek_eod.length > 0) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.cek_eod), 'EOD');
+        }
+        
+        XLSX.writeFile(wb, `AmandaMart_Data_${new Date().toISOString().slice(0,19)}.xlsx`);
+        showToast('✅ Ekspor semua data berhasil!', 'success');
+    } catch(e) {
+        console.error("Export error:", e);
+        showToast('❌ Gagal mengekspor data', 'danger');
+    }
+}
+
+// ======================= COLUMN DEFINITIONS =======================
 function getTransCols() {
     return [
-        { data: "no_urut" }, { data: "plu" }, { data: "descp" },
+        { data: "no_urut" }, 
+        { data: "plu" }, 
+        { data: "descp" },
         { data: "price", render: (d) => formatRupiah(d) },
-        { data: "qty" }, { data: "tgl_trs" }, { data: "kd_store" }
+        { data: "qty" }, 
+        { data: "tgl_trs" }, 
+        { data: "kd_store" }
     ];
 }
+
 function getSaleCols() {
     return [
-        { data: "no_fak" }, { data: "tgl_f" },
+        { data: "no_fak" }, 
+        { data: "tgl_f" },
         { data: "jum", render: (d) => formatRupiah(d) },
         { data: "cash", render: (d) => formatRupiah(d) },
         { data: "member" }
     ];
 }
+
 function getMemberCols() {
-    return [{ data: "kode_member" }, { data: "nama_member" }, { data: "no_kartu" }, { data: "point" }];
+    return [
+        { data: "kode_member" }, 
+        { data: "nama_member" }, 
+        { data: "no_kartu" }, 
+        { data: "point" }
+    ];
 }
+
 function getProductCols() {
-    return [{ data: "plu" }, { data: "descp" }, { data: "price1", render: (d) => formatRupiah(d) }];
+    return [
+        { data: "plu" }, 
+        { data: "descp" }, 
+        { data: "price1", render: (d) => formatRupiah(d) }
+    ];
 }
+
 function getEodCols() {
-    return [{ data: "kd_ksr" }, { data: "date_ksr" }, { data: "ip_kasir" }];
-}
-
-// Di dalam $(document).ready
-$('#exportAllBtn').on('click', function() {
-    if (window.parsedData) {
-        exportAllToExcel(window.parsedData);
-    } else {
-        showToast('Tidak ada data untuk diekspor', 'danger');
-    }
-});
-
-function exportAllToExcel(data) {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_trans), 'Transaksi');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_tsale), 'Penjualan');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_cust), 'Member');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_loader), 'Produk');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.cek_eod), 'EOD');
-    XLSX.writeFile(wb, `AmandaMart_Data_${new Date().toISOString().slice(0,19)}.xlsx`);
-    showToast('✅ Ekspor semua data berhasil!', 'success');
+    return [
+        { data: "kd_ksr" }, 
+        { data: "date_ksr" }, 
+        { data: "ip_kasir" }
+    ];
 }
