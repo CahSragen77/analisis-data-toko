@@ -1,22 +1,54 @@
+// Dashboard Utama - Full Version
 let transTable, saleTable, memberTable, productTable, eodTable;
 let transChart, paymentChart;
 
 $(document).ready(function() {
+    console.log("Dashboard siap!");
     initDataTables();
+    
+    // Event Upload - FIXED
+    $('#uploadArea').on('click', function() {
+        $('#sqlUpload').click();
+    });
+    
     $('#sqlUpload').on('change', handleFileUpload);
-    $('#uploadArea').click(() => $('#sqlUpload').click());
-    $('#clearDataBtn').click(() => clearAllData());
-    $('.tab-btn').click(function() {
+    
+    // Event Clear Data
+    $('#clearDataBtn').on('click', function() {
+        if (confirm('Yakin ingin menghapus semua data? Halaman akan direset.')) {
+            clearAllData();
+        }
+    });
+    
+    // Tab navigation
+    $('.tab-btn').on('click', function() {
         $('.tab-btn').removeClass('active');
         $(this).addClass('active');
         $('.tab-pane').removeClass('active');
         $('#' + $(this).data('tab')).addClass('active');
     });
+    
+    // Cek data dari localStorage (jika sebelumnya sudah upload)
+    const savedData = localStorage.getItem('amandamart_data');
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            updateDashboard(parsed);
+            showToast('Data dari sesi sebelumnya dimuat', 'info');
+        } catch(e) {}
+    }
 });
 
 function initDataTables() {
-    transTable = $('#transTable').DataTable({ columns: getTransCols(), pageLength: 10 });
-    saleTable = $('#saleTable').DataTable({ columns: getSaleCols(), pageLength: 10 });
+    transTable = $('#transTable').DataTable({
+        columns: getTransCols(),
+        pageLength: 10,
+        language: { search: "Cari:", lengthMenu: "Tampilkan _MENU_ data", info: "Menampilkan _START_ - _END_ dari _TOTAL_ data" }
+    });
+    saleTable = $('#saleTable').DataTable({
+        columns: getSaleCols(),
+        pageLength: 10
+    });
     memberTable = $('#memberTable').DataTable({ columns: getMemberCols() });
     productTable = $('#productTable').DataTable({ columns: getProductCols() });
     eodTable = $('#eodTable').DataTable({ columns: getEodCols() });
@@ -25,25 +57,37 @@ function initDataTables() {
 async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    const text = await file.text();
-    const parsed = parseSQLCopy(text);
-    updateDashboard(parsed);
-    showToast(`✅ Loaded: ${parsed.c_trans.length} transaksi, ${parsed.c_tsale.length} penjualan`);
-    window.parsedData = parsed;
+    
+    showToast(`Memproses ${file.name} ...`, 'info');
+    
+    try {
+        const text = await file.text();
+        const parsed = parseSQLCopy(text);
+        
+        // Simpan ke localStorage
+        localStorage.setItem('amandamart_data', JSON.stringify(parsed));
+        
+        updateDashboard(parsed);
+        showToast(`✅ Berhasil! ${parsed.c_trans.length} transaksi, ${parsed.c_tsale.length} penjualan`, 'success');
+        
+        // Simpan ke window untuk akses global
+        window.parsedData = parsed;
+        
+    } catch (error) {
+        console.error(error);
+        showToast('❌ Gagal membaca file SQL. Periksa format file.', 'danger');
+    }
 }
 
 function updateDashboard(data) {
+    // Update stat cards
     $('#statTrans').text(data.c_trans.length);
     $('#statSale').text(data.c_tsale.length);
     $('#statMember').text(data.m_cust.length);
     $('#statProd').text(data.m_loader.length);
     
     // Update charts
-    const dailyCount = groupByDate(data.c_tsale);
-    if (transChart) transChart.destroy();
-    transChart = new Chart(document.getElementById('transChart'), {
-        type: 'line', data: { labels: Object.keys(dailyCount), datasets: [{ label: 'Transaksi', data: Object.values(dailyCount), borderColor: '#2a5298' }] }
-    });
+    updateCharts(data.c_tsale);
     
     // Update tables
     transTable.clear().rows.add(data.c_trans).draw();
@@ -53,14 +97,57 @@ function updateDashboard(data) {
     eodTable.clear().rows.add(data.cek_eod).draw();
 }
 
-function groupByDate(sales) {
-    const map = {};
-    sales.forEach(s => { const d = s.tgl_f; map[d] = (map[d] || 0) + 1; });
-    return map;
+function updateCharts(salesData) {
+    // Group by date
+    const dateMap = new Map();
+    salesData.forEach(s => {
+        const tgl = s.tgl_f;
+        if (!tgl) return;
+        dateMap.set(tgl, (dateMap.get(tgl) || 0) + 1);
+    });
+    
+    const labels = Array.from(dateMap.keys()).sort();
+    const counts = labels.map(l => dateMap.get(l));
+    
+    if (transChart) transChart.destroy();
+    const ctx1 = document.getElementById('transChart').getContext('2d');
+    transChart = new Chart(ctx1, {
+        type: 'line',
+        data: { labels: labels, datasets: [{ label: 'Jumlah Transaksi', data: counts, borderColor: '#2a5298', tension: 0.3, fill: true, backgroundColor: 'rgba(42,82,152,0.05)' }] },
+        options: { responsive: true, maintainAspectRatio: true }
+    });
+    
+    // Payment method chart (demo)
+    if (paymentChart) paymentChart.destroy();
+    const ctx2 = document.getElementById('paymentChart').getContext('2d');
+    paymentChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: { labels: ['Cash', 'QRIS', 'Debit'], datasets: [{ data: [65, 25, 10], backgroundColor: ['#198754', '#0dcaf0', '#ffc107'] }] },
+        options: { responsive: true }
+    });
 }
 
-function getTransCols() { return [{ data: "no_urut" },{ data: "plu" },{ data: "descp" },{ data: "price", render: (d)=>formatRupiah(d) },{ data: "qty" },{ data: "tgl_trs" },{ data: "kd_store" }]; }
-function getSaleCols() { return [{ data: "no_fak" },{ data: "tgl_f" },{ data: "jum", render: (d)=>formatRupiah(d) },{ data: "cash", render: (d)=>formatRupiah(d) },{ data: "member" }]; }
-function getMemberCols() { return [{ data: "kode_member" },{ data: "nama_member" },{ data: "no_kartu" },{ data: "point" }]; }
-function getProductCols() { return [{ data: "plu" },{ data: "descp" },{ data: "price1", render: (d)=>formatRupiah(d) }]; }
-function getEodCols() { return [{ data: "kd_ksr" },{ data: "date_ksr" },{ data: "ip_kasir" }]; }
+function getTransCols() {
+    return [
+        { data: "no_urut" }, { data: "plu" }, { data: "descp" },
+        { data: "price", render: (d) => formatRupiah(d) },
+        { data: "qty" }, { data: "tgl_trs" }, { data: "kd_store" }
+    ];
+}
+function getSaleCols() {
+    return [
+        { data: "no_fak" }, { data: "tgl_f" },
+        { data: "jum", render: (d) => formatRupiah(d) },
+        { data: "cash", render: (d) => formatRupiah(d) },
+        { data: "member" }
+    ];
+}
+function getMemberCols() {
+    return [{ data: "kode_member" }, { data: "nama_member" }, { data: "no_kartu" }, { data: "point" }];
+}
+function getProductCols() {
+    return [{ data: "plu" }, { data: "descp" }, { data: "price1", render: (d) => formatRupiah(d) }];
+}
+function getEodCols() {
+    return [{ data: "kd_ksr" }, { data: "date_ksr" }, { data: "ip_kasir" }];
+}
