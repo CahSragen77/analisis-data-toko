@@ -3,98 +3,261 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmandaMart | Dashboard Utama</title>
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Chart.js untuk grafik -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- SheetJS untuk ekspor Excel -->
+    <title>AmandaMart | Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .upload-btn { background: #1e3c72; color: white; padding: 12px 24px; border-radius: 40px; cursor: pointer; border: none; font-size: 16px; }
+        .clear-btn { background: #dc3545; color: white; padding: 12px 24px; border-radius: 40px; cursor: pointer; border: none; }
+        .export-btn { background: #1F7B4D; color: white; padding: 12px 24px; border-radius: 40px; cursor: pointer; border: none; }
+        .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stat-card h3 { font-size: 14px; color: #666; margin-bottom: 10px; }
+        .stat-card p { font-size: 28px; font-weight: bold; color: #1e3c72; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 24px; border: none; border-radius: 30px; cursor: pointer; background: #e9ecef; }
+        .tab-btn.active { background: #1e3c72; color: white; }
+        .tab-pane { display: none; background: white; border-radius: 20px; padding: 20px; overflow-x: auto; }
+        .tab-pane.active { display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; padding: 12px 24px; border-radius: 40px; display: none; z-index: 999; }
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(2,1fr); }
+            .header { flex-direction: column; align-items: stretch; }
+            .btn-group { justify-content: center; }
+        }
+    </style>
+    <!-- SheetJS untuk Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- jQuery & DataTables -->
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
-    <button id="exportAllBtn" class="btn-excel-header" style="background:#1F7B4D; color:white; border:none; padding:10px 20px; border-radius:40px; margin-left:12px;">
-    <i class="icon-excel"></i> Ekspor Semua ke Excel
-    </button>
 </head>
 <body>
-    <div class="app-container">
-        <!-- SIDEBAR / MENU BAR -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="icon-database"></i>
-                <span>Amanda<span class="highlight">Mart</span></span>
-            </div>
-            <nav class="nav-menu">
-                <a href="index.html" class="nav-item active">
-                    <i class="icon-dashboard"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="laba-rugi.html" class="nav-item">
-                    <i class="icon-chart"></i>
-                    <span>Laba / Rugi</span>
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <button id="clearDataBtn" class="btn-clear">
-                    <i class="icon-trash"></i> Clear Data
-                </button>
-            </div>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-            <header class="top-bar">
-                <h1><i class="icon-dashboard"></i> Dashboard Utama</h1>
-                <div class="upload-area" id="uploadArea">
-                    <i class="icon-upload"></i> Upload SQL Dump
-                    <input type="file" id="sqlUpload" accept=".sql,.txt" hidden>
-                </div>
-            </header>
-
-            <!-- Stat Cards -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card"><h3>Transaksi</h3><p id="statTrans">0</p></div>
-                <div class="stat-card"><h3>Penjualan</h3><p id="statSale">0</p></div>
-                <div class="stat-card"><h3>Member</h3><p id="statMember">0</p></div>
-                <div class="stat-card"><h3>Produk</h3><p id="statProd">0</p></div>
-            </div>
-
-            <!-- Grafik Ringkasan -->
-            <div class="charts-row">
-                <div class="chart-card">
-                    <h3>Jumlah Transaksi per Hari</h3>
-                    <canvas id="transChart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>Metode Pembayaran</h3>
-                    <canvas id="paymentChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Tab Menu untuk tabel -->
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="trans">Detail Transaksi</button>
-                <button class="tab-btn" data-tab="sale">Penjualan Header</button>
-                <button class="tab-btn" data-tab="member">Member</button>
-                <button class="tab-btn" data-tab="product">Master Produk</button>
-                <button class="tab-btn" data-tab="eod">Log EOD</button>
-            </div>
-            <div class="tab-content">
-                <div class="tab-pane active" id="trans"><table id="transTable" class="data-table"></table></div>
-                <div class="tab-pane" id="sale"><table id="saleTable" class="data-table"></table></div>
-                <div class="tab-pane" id="member"><table id="memberTable" class="data-table"></table></div>
-                <div class="tab-pane" id="product"><table id="productTable" class="data-table"></table></div>
-                <div class="tab-pane" id="eod"><table id="eodTable" class="data-table"></table></div>
-            </div>
-        </main>
+<div class="container">
+    <div class="header">
+        <h1>📊 AmandaMart Dashboard</h1>
+        <div class="btn-group">
+            <button class="upload-btn" id="uploadBtn">📂 Upload SQL Dump</button>
+            <button class="export-btn" id="exportBtn">📎 Ekspor ke Excel</button>
+            <button class="clear-btn" id="clearBtn">🗑️ Clear Data</button>
+        </div>
+        <input type="file" id="sqlFile" accept=".sql,.txt" style="display:none">
     </div>
 
-    <div id="toastMsg" class="toast-msg" style="display:none"></div>
+    <div class="stats">
+        <div class="stat-card"><h3>Transaksi</h3><p id="statTrans">0</p></div>
+        <div class="stat-card"><h3>Penjualan</h3><p id="statSale">0</p></div>
+        <div class="stat-card"><h3>Member</h3><p id="statMember">0</p></div>
+        <div class="stat-card"><h3>Produk</h3><p id="statProd">0</p></div>
+    </div>
 
-    <script src="js/utils.js"></script>
-    <script src="js/sql-parser.js"></script>
-    <script src="js/dashboard.js"></script>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-trans">📋 Transaksi</button>
+        <button class="tab-btn" data-tab="tab-sale">💰 Penjualan</button>
+        <button class="tab-btn" data-tab="tab-member">👥 Member</button>
+        <button class="tab-btn" data-tab="tab-product">📦 Produk</button>
+        <button class="tab-btn" data-tab="tab-eod">⏱️ EOD</button>
+    </div>
+
+    <div id="tab-trans" class="tab-pane active"><table id="transTable"><thead><tr><th>Tanggal</th><th>PLU</th><th>Deskripsi</th><th>Harga</th><th>Qty</th><th>Kasir</th></tr></thead><tbody></tbody></table></div>
+    <div id="tab-sale" class="tab-pane"><table id="saleTable"><thead><tr><th>No Faktur</th><th>Tanggal</th><th>Total</th><th>Cash</th><th>Member</th></tr></thead><tbody></tbody></table></div>
+    <div id="tab-member" class="tab-pane"><table id="memberTable"><thead><tr><th>Kode</th><th>Nama</th><th>No Kartu</th><th>Poin</th></tr></thead><tbody></tbody></table></div>
+    <div id="tab-product" class="tab-pane"><table id="productTable"><thead><tr><th>PLU</th><th>Deskripsi</th><th>Kategori</th><th>Harga</th></tr></thead><tbody></tbody></table></div>
+    <div id="tab-eod" class="tab-pane"><table id="eodTable"><thead><tr><th>Kasir</th><th>Tanggal</th><th>IP</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+</div>
+<div id="toastMsg" class="toast"></div>
+
+<script>
+// ======================= UTILS =======================
+function formatRupiah(val) {
+    if (val === undefined || val === null) return 'Rp 0';
+    let num = parseFloat(val);
+    if (isNaN(num)) return String(val);
+    return 'Rp ' + num.toLocaleString('id-ID');
+}
+
+function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toastMsg');
+    toast.style.background = type === 'danger' ? '#dc3545' : '#28a745';
+    toast.innerHTML = msg;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 3000);
+}
+
+// ======================= PARSING SQL =======================
+function parseSQLCopy(sqlText) {
+    const result = { c_trans: [], c_tsale: [], m_cust: [], m_loader: [], cek_eod: [] };
+    const lines = sqlText.split(/\r?\n/);
+    let currentTable = null, columns = [], inCopy = false, copyDataLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let copyMatch = line.match(/^COPY public\.(\w+)\s*\((.*?)\)\s+FROM stdin;/i);
+        if (copyMatch) {
+            currentTable = copyMatch[1].toLowerCase();
+            columns = copyMatch[2].split(',').map(c => c.trim().replace(/"/g, ''));
+            inCopy = true;
+            copyDataLines = [];
+            continue;
+        }
+        if (inCopy) {
+            if (line.trim() === '\\ .' || line.trim() === '\\.') {
+                const parsedRows = parseCopyDataRows(copyDataLines, columns, currentTable);
+                if (result[currentTable]) result[currentTable].push(...parsedRows);
+                inCopy = false;
+                currentTable = null;
+                continue;
+            }
+            if (line.startsWith('--') || line.trim() === '') continue;
+            copyDataLines.push(line);
+        }
+    }
+    return result;
+}
+
+function parseCopyDataRows(rows, columns, tableName) {
+    const dataRows = [];
+    for (let row of rows) {
+        if (row.trim() === '') continue;
+        let values = [], current = '', inEscape = false;
+        for (let ch of row) {
+            if (ch === '\\' && !inEscape) { inEscape = true; current += ch; continue; }
+            if (ch === '\t' && !inEscape) { values.push(cleanNullValue(current)); current = ''; continue; }
+            current += ch; inEscape = false;
+        }
+        values.push(cleanNullValue(current));
+        if (values.length !== columns.length) continue;
+        let obj = {};
+        columns.forEach((col, idx) => { obj[col] = values[idx]; });
+        if (tableName === 'c_trans') {
+            obj.price = parseFloat(obj.price) || 0;
+            obj.qty = parseFloat(obj.qty) || 0;
+        }
+        if (tableName === 'c_tsale') obj.jum = parseFloat(obj.jum) || 0;
+        if (tableName === 'm_loader') obj.price1 = parseFloat(obj.price1) || 0;
+        dataRows.push(obj);
+    }
+    return dataRows;
+}
+
+function cleanNullValue(val) {
+    if (!val || val === '\\N' || val === 'NULL') return null;
+    if (val.startsWith('\\') && val.length > 1) return val.substring(1);
+    return val;
+}
+
+// ======================= GLOBAL =======================
+let globalData = null;
+
+$(document).ready(function() {
+    console.log("✅ Dashboard siap!");
+    
+    $('#uploadBtn').click(function() { $('#sqlFile').click(); });
+    
+    $('#clearBtn').click(function() { 
+        if (confirm('Yakin hapus semua data?')) {
+            localStorage.removeItem('am_data');
+            location.reload();
+        }
+    });
+    
+    $('#sqlFile').on('change', handleFileUpload);
+    
+    $('#exportBtn').click(function() { 
+        if (globalData) exportToExcel(globalData); 
+        else showToast('Tidak ada data', 'danger');
+    });
+    
+    $('.tab-btn').click(function() {
+        $('.tab-btn').removeClass('active');
+        $(this).addClass('active');
+        $('.tab-pane').removeClass('active');
+        $('#' + $(this).data('tab')).addClass('active');
+    });
+    
+    // Cek localStorage
+    const saved = localStorage.getItem('am_data');
+    if (saved) { 
+        globalData = JSON.parse(saved); 
+        updateUI(globalData); 
+        showToast('Data dari sesi sebelumnya', 'info');
+    }
+});
+
+async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    showToast('Memproses file...', 'info');
+    try {
+        const text = await file.text();
+        const parsed = parseSQLCopy(text);
+        globalData = parsed;
+        localStorage.setItem('am_data', JSON.stringify(parsed));
+        updateUI(parsed);
+        showToast(`✅ Berhasil! ${parsed.c_trans.length} transaksi`, 'success');
+    } catch(e) { 
+        showToast('❌ Gagal membaca file', 'danger'); 
+        console.error(e);
+    }
+}
+
+function updateUI(data) {
+    $('#statTrans').text(data.c_trans.length);
+    $('#statSale').text(data.c_tsale.length);
+    $('#statMember').text(data.m_cust.length);
+    $('#statProd').text(data.m_loader.length);
+    
+    // Transaksi
+    let transHtml = '';
+    data.c_trans.slice(0,200).forEach(t => {
+        transHtml += `<tr><td>${t.tgl_trs || '-'}</td><td>${t.plu || '-'}</td><td>${(t.descp || '-').substring(0,35)}</td><td>${formatRupiah(t.price)}</td><td>${t.qty || 0}</td><td>${t.kd_kasir || '-'}</td></tr>`;
+    });
+    $('#transTable tbody').html(transHtml || '<tr><td colspan="6">Tidak ada data</td></tr>');
+    
+    // Penjualan
+    let saleHtml = '';
+    data.c_tsale.slice(0,100).forEach(s => {
+        saleHtml += `<tr><td>${s.no_fak || '-'}</td><td>${s.tgl_f || '-'}</td><td>${formatRupiah(s.jum)}</td><td>${formatRupiah(s.cash)}</td><td>${s.member || '-'}</td></tr>`;
+    });
+    $('#saleTable tbody').html(saleHtml || '<tr><td colspan="5">Tidak ada data</td></tr>');
+    
+    // Member
+    let memberHtml = '';
+    data.m_cust.slice(0,100).forEach(m => {
+        memberHtml += `<tr><td>${m.kode_member || '-'}</td><td>${m.nama_member || '-'}</td><td>${m.no_kartu || '-'}</td><td>${m.point || 0}</td></tr>`;
+    });
+    $('#memberTable tbody').html(memberHtml || '<tr><td colspan="4">Tidak ada data</td></tr>');
+    
+    // Produk
+    let productHtml = '';
+    data.m_loader.slice(0,100).forEach(p => {
+        productHtml += `<tr><td>${p.plu || '-'}</td><td>${(p.descp || '-').substring(0,40)}</td><td>${p.kategori || '-'}</td><td>${formatRupiah(p.price1)}</td></tr>`;
+    });
+    $('#productTable tbody').html(productHtml || '<tr><td colspan="4">Tidak ada data</td></tr>');
+    
+    // EOD
+    let eodHtml = '';
+    data.cek_eod.forEach(e => {
+        eodHtml += `<tr><td>${e.kd_ksr || '-'}</td><td>${e.date_ksr || '-'}</td><td>${e.ip_kasir || '-'}</td><td>${e.pakai == 2 ? '✅ Selesai' : '⏳ Proses'}</td></tr>`;
+    });
+    $('#eodTable tbody').html(eodHtml || '<tr><td colspan="4">Tidak ada data</td></tr>');
+}
+
+function exportToExcel(data) {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_trans), 'Transaksi');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_tsale), 'Penjualan');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_cust), 'Member');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_loader), 'Produk');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.cek_eod), 'EOD');
+    XLSX.writeFile(wb, `AmandaMart_Data_${new Date().toISOString().slice(0,19)}.xlsx`);
+    showToast('✅ Ekspor berhasil!', 'success');
+}
+</script>
 </body>
 </html>
