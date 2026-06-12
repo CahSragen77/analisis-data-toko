@@ -151,3 +151,23 @@ function getProductCols() {
 function getEodCols() {
     return [{ data: "kd_ksr" }, { data: "date_ksr" }, { data: "ip_kasir" }];
 }
+
+// Di dalam $(document).ready
+$('#exportAllBtn').on('click', function() {
+    if (window.parsedData) {
+        exportAllToExcel(window.parsedData);
+    } else {
+        showToast('Tidak ada data untuk diekspor', 'danger');
+    }
+});
+
+function exportAllToExcel(data) {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_trans), 'Transaksi');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.c_tsale), 'Penjualan');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_cust), 'Member');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.m_loader), 'Produk');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.cek_eod), 'EOD');
+    XLSX.writeFile(wb, `AmandaMart_Data_${new Date().toISOString().slice(0,19)}.xlsx`);
+    showToast('✅ Ekspor semua data berhasil!', 'success');
+}
