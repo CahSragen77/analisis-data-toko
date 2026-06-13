@@ -35,6 +35,40 @@
         </div>
     </nav>
 
+    <div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="erp-dropzone text-center p-4" id="dropzoneArea">
+                    <input type="file" id="sqlUpload" accept=".sql,.txt" style="display:none">
+                    <div class="dz-message py-3">
+                        <div class="dz-icon mb-3">
+                            <i class="bi bi-database-fill-up text-primary" style="font-size: 2.5rem;"></i>
+                        </div>
+                        <h5 class="fw-semibold text-dark mb-1">Upload Database Dump File</h5>
+                        <p class="text-muted small mb-3">Klik untuk memilih file atau seret (drag & drop) file <code class="fw-bold">.sql</code> Anda ke sini</p>
+                        <button type="button" class="btn btn-sm btn-primary px-4 py-2 fw-medium shadow-sm" onclick="document.getElementById('sqlUpload').click()">
+                            <i class="bi bi-folder2-open me-1"></i> Pilih File SQL
+                        </button>
+                    </div>
+                    <div class="dz-file-preview d-none mt-2 p-3 bg-light rounded border border-dashed" id="filePreviewZone">
+                        <div class="d-flex align-items-center justify-content-center gap-3">
+                            <i class="bi bi-filetype-sql text-danger fs-2"></i>
+                            <div class="text-start">
+                                <div class="fw-bold text-dark id-filename" id="loadedFileName">-</div>
+                                <div class="text-muted fs-8 id-filesize" id="loadedFileSize">0 KB</div>
+                            </div>
+                            <span class="badge bg-success ms-2 p-2 d-flex align-items-center gap-1">
+                                <i class="bi bi-shield-check"></i> Ready to Parse
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
     <div class="container-fluid py-4 px-3 px-lg-4">
         
         <div class="row g-3 mb-4" id="statsRow">
