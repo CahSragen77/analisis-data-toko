@@ -42,6 +42,7 @@ $(document).ready(function() {
     if (savedData) {
         try {
             const parsed = JSON.parse(savedData);
+            window.parsedData = parsed;
             updateDashboard(parsed);
             showToast('Data dari sesi sebelumnya dimuat', 'info');
         } catch(e) {
@@ -78,11 +79,9 @@ async function handleFileUpload(event) {
         // Simpan ke localStorage
         localStorage.setItem('amandamart_data', JSON.stringify(parsed));
         
+        window.parsedData = parsed;
         updateDashboard(parsed);
         showToast(`✅ Berhasil! ${parsed.c_trans.length} transaksi, ${parsed.c_tsale.length} penjualan`, 'success');
-        
-        // Simpan ke window untuk akses global
-        window.parsedData = parsed;
         
     } catch (error) {
         console.error("Upload error:", error);
@@ -91,42 +90,40 @@ async function handleFileUpload(event) {
 }
 
 function updateDashboard(data) {
+    if (!data) return;
+    
     // Update stat cards
-    $('#statTrans').text(data.c_trans.length || 0);
-    $('#statSale').text(data.c_tsale.length || 0);
-    $('#statMember').text(data.m_cust.length || 0);
-    $('#statProd').text(data.m_loader.length || 0);
+    $('#statTrans').text(data.c_trans?.length || 0);
+    $('#statSale').text(data.c_tsale?.length || 0);
+    $('#statMember').text(data.m_cust?.length || 0);
+    $('#statProd').text(data.m_loader?.length || 0);
     
     // Update charts
     if (data.c_tsale && data.c_tsale.length > 0) {
         updateCharts(data.c_tsale);
     }
     
-    // Update tables (dengan pengecekan data kosong)
+    // Update tables
     if (transTable && data.c_trans) {
         transTable.clear();
         transTable.rows.add(data.c_trans);
         transTable.draw();
     }
-    
     if (saleTable && data.c_tsale) {
         saleTable.clear();
         saleTable.rows.add(data.c_tsale);
         saleTable.draw();
     }
-    
     if (memberTable && data.m_cust) {
         memberTable.clear();
         memberTable.rows.add(data.m_cust);
         memberTable.draw();
     }
-    
     if (productTable && data.m_loader) {
         productTable.clear();
         productTable.rows.add(data.m_loader);
         productTable.draw();
     }
-    
     if (eodTable && data.cek_eod) {
         eodTable.clear();
         eodTable.rows.add(data.cek_eod);
@@ -146,7 +143,7 @@ function updateCharts(salesData) {
     const labels = Array.from(dateMap.keys()).sort();
     const counts = labels.map(l => dateMap.get(l));
     
-    // Chart Transaksi (Line Chart)
+    // Chart Transaksi
     const ctx1 = document.getElementById('transChart');
     if (ctx1) {
         if (transChart) transChart.destroy();
@@ -167,7 +164,7 @@ function updateCharts(salesData) {
         });
     }
     
-    // Payment method chart (doughnut) - Demo data
+    // Payment method chart (doughnut)
     const ctx2 = document.getElementById('paymentChart');
     if (ctx2) {
         if (paymentChart) paymentChart.destroy();
@@ -217,47 +214,25 @@ function exportAllToExcel(data) {
 // ======================= COLUMN DEFINITIONS =======================
 function getTransCols() {
     return [
-        { data: "no_urut" }, 
-        { data: "plu" }, 
-        { data: "descp" },
+        { data: "no_urut" }, { data: "plu" }, { data: "descp" },
         { data: "price", render: (d) => formatRupiah(d) },
-        { data: "qty" }, 
-        { data: "tgl_trs" }, 
-        { data: "kd_store" }
+        { data: "qty" }, { data: "tgl_trs" }, { data: "kd_store" }
     ];
 }
-
 function getSaleCols() {
     return [
-        { data: "no_fak" }, 
-        { data: "tgl_f" },
+        { data: "no_fak" }, { data: "tgl_f" },
         { data: "jum", render: (d) => formatRupiah(d) },
         { data: "cash", render: (d) => formatRupiah(d) },
         { data: "member" }
     ];
 }
-
 function getMemberCols() {
-    return [
-        { data: "kode_member" }, 
-        { data: "nama_member" }, 
-        { data: "no_kartu" }, 
-        { data: "point" }
-    ];
+    return [{ data: "kode_member" }, { data: "nama_member" }, { data: "no_kartu" }, { data: "point" }];
 }
-
 function getProductCols() {
-    return [
-        { data: "plu" }, 
-        { data: "descp" }, 
-        { data: "price1", render: (d) => formatRupiah(d) }
-    ];
+    return [{ data: "plu" }, { data: "descp" }, { data: "price1", render: (d) => formatRupiah(d) }];
 }
-
 function getEodCols() {
-    return [
-        { data: "kd_ksr" }, 
-        { data: "date_ksr" }, 
-        { data: "ip_kasir" }
-    ];
+    return [{ data: "kd_ksr" }, { data: "date_ksr" }, { data: "ip_kasir" }];
 }
