@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>AmandaMart | Dashboard Utama</title>
     <link rel="stylesheet" href="css/style.css">
     <!-- Chart.js untuk grafik -->
@@ -43,9 +43,14 @@
         <main class="main-content">
             <header class="top-bar">
                 <h1><i class="icon-dashboard"></i> Dashboard Utama</h1>
-                <div class="upload-area" id="uploadArea">
-                    <i class="icon-upload"></i> Upload SQL Dump
-                    <input type="file" id="sqlUpload" accept=".sql,.txt" hidden>
+                <div style="display: flex; gap: 12px;">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="icon-upload"></i> Upload SQL Dump
+                        <input type="file" id="sqlUpload" accept=".sql,.txt" hidden>
+                    </div>
+                    <button id="exportAllBtn" class="btn-excel-header" style="background:#1F7B4D; color:white; border:none; padding:12px 24px; border-radius:40px; cursor:pointer;">
+                        <i class="icon-excel"></i> Ekspor Semua ke Excel
+                    </button>
                 </div>
             </header>
 
@@ -71,18 +76,18 @@
 
             <!-- Tab Menu untuk tabel -->
             <div class="tabs">
-                <button class="tab-btn active" data-tab="trans">Detail Transaksi</button>
-                <button class="tab-btn" data-tab="sale">Penjualan Header</button>
-                <button class="tab-btn" data-tab="member">Member</button>
-                <button class="tab-btn" data-tab="product">Master Produk</button>
-                <button class="tab-btn" data-tab="eod">Log EOD</button>
+                <button class="tab-btn active" data-tab="trans">📋 Detail Transaksi</button>
+                <button class="tab-btn" data-tab="sale">💰 Penjualan Header</button>
+                <button class="tab-btn" data-tab="member">👥 Member</button>
+                <button class="tab-btn" data-tab="product">📦 Master Produk</button>
+                <button class="tab-btn" data-tab="eod">⏱️ Log EOD</button>
             </div>
             <div class="tab-content">
-                <div class="tab-pane active" id="trans"><table id="transTable" class="data-table"></table></div>
-                <div class="tab-pane" id="sale"><table id="saleTable" class="data-table"></table></div>
-                <div class="tab-pane" id="member"><table id="memberTable" class="data-table"></table></div>
-                <div class="tab-pane" id="product"><table id="productTable" class="data-table"></table></div>
-                <div class="tab-pane" id="eod"><table id="eodTable" class="data-table"></table></div>
+                <div class="tab-pane active" id="trans"><table id="transTable" class="data-table">...</table></div>
+                <div class="tab-pane" id="sale"><table id="saleTable" class="data-table">...</table></div>
+                <div class="tab-pane" id="member"><table id="memberTable" class="data-table">...</table></div>
+                <div class="tab-pane" id="product"><table id="productTable" class="data-table">...</table></div>
+                <div class="tab-pane" id="eod"><table id="eodTable" class="data-table">...</table></div>
             </div>
         </main>
     </div>
