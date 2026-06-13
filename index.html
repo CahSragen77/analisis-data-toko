@@ -2,182 +2,429 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmandaMart ERP | Financial SQL Intelligence</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AmandaMart SQL Data Analyzer | Load & Ekspor Excel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { background: #f0f2f5; font-family: 'Segoe UI', system-ui; }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+        .dragover { border: 2px dashed #0d6efd !important; background: rgba(13, 110, 253, 0.05); }
+        .card-stat { transition: transform 0.2s; border: none; }
+        .card-stat:hover { transform: translateY(-3px); }
+    </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-erp-sidebar sticky-top py-2 px-3 border-bottom border-secondary border-opacity-10">
-        <div class="container-fluid px-0">
-            <span class="navbar-brand d-flex align-items-center gap-2 m-0 fs-5">
-                <div class="brand-icon"><i class="bi bi-layers-half"></i></div>
-                <div>
-                    <strong class="text-white">AmandaMart</strong> 
-                    <span class="text-muted fs-7 fw-normal">| Financial SQL Analytics</span>
-                </div>
-            </span>
-            <div class="d-flex gap-2">
-                <label for="sqlUpload" class="btn btn-sm btn-outline-light d-flex align-items-center gap-2 px-3">
-                    <i class="bi bi-cloud-arrow-up-fill"></i> Import SQL Dump
-                </label>
-                <input type="file" id="sqlUpload" accept=".sql,.txt" style="display:none">
-                <button id="exportAllBtn" class="btn btn-sm btn-emerald d-flex align-items-center gap-2 px-3" disabled>
-                    <i class="bi bi-file-earmark-excel-fill"></i> Export Financial Report
-                </button>
+<nav class="navbar navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1"><i class="bi bi-cpu-fill me-2"></i>AmandaMart ERP - Data Analyzer</span>
+    </div>
+</nav>
+
+<div class="container-fluid py-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4 text-center" id="dropzoneArea" style="border: 2px dashed #ccc; border-radius: 8px; cursor: pointer;">
+            <i class="bi bi-cloud-arrow-up-fill text-secondary" style="font-size: 3rem;"></i>
+            <h5 class="mt-2">Seret & Lepaskan File .SQL / .TXT Dump di Sini</h5>
+            <p class="text-muted small">atau klik tombol di bawah untuk memilih file dari komputer</p>
+            <input type="file" id="sqlUpload" class="d-none" accept=".sql,.txt">
+            <button class="btn btn-primary" onclick="$('#sqlUpload').click()"><i class="bi bi-folder2-open me-1"></i>Pilih File Manual</button>
+        </div>
+    </div>
+
+    <div id="filePreviewZone" class="card shadow-sm mb-4 d-none">
+        <div class="card-body d-flex justify-content-between align-items-center bg-light">
+            <div>
+                <strong class="text-dark"><i class="bi bi-file-earmark-code me-1"></i>File Terbaca:</strong> <span id="loadedFileName" class="me-3 text-primary">-</span>
+                <strong>Ukuran:</strong> <span id="loadedFileSize">-</span>
+            </div>
+            <button id="exportAllBtn" class="btn btn-success font-weight-bold" disabled>
+                <i class="bi bi-file-earmark-excel me-1"></i>Export Financial Report (Excel)
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm bg-primary text-white p-3">
+                <div class="small opacity-75">TOTAL NETTO (GMV)</div>
+                <h3 id="statGmv" class="mb-0 fw-bold">Rp 0</h3>
             </div>
         </div>
-    </nav>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm bg-success text-white p-3">
+                <div class="small opacity-75">ESTIMASI LABA KOTOR</div>
+                <h3 id="statProfit" class="mb-0 fw-bold">Rp 0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm bg-warning text-dark p-3">
+                <div class="small opacity-75">RASIO TRANSAKSI MEMBER</div>
+                <h3 id="statMemberRatio" class="mb-0 fw-bold">0%</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat shadow-sm bg-info text-white p-3">
+                <div class="small opacity-75">CUSTOMER MEMBER AKTIF</div>
+                <h3 id="statActiveMember" class="mb-0 fw-bold">0</h3>
+            </div>
+        </div>
+    </div>
 
     <div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-4">
-                <div class="erp-dropzone text-center p-4" id="dropzoneArea">
-                    <input type="file" id="sqlUpload" accept=".sql,.txt" style="display:none">
-                    <div class="dz-message py-3">
-                        <div class="dz-icon mb-3">
-                            <i class="bi bi-database-fill-up text-primary" style="font-size: 2.5rem;"></i>
-                        </div>
-                        <h5 class="fw-semibold text-dark mb-1">Upload Database Dump File</h5>
-                        <p class="text-muted small mb-3">Klik untuk memilih file atau seret (drag & drop) file <code class="fw-bold">.sql</code> Anda ke sini</p>
-                        <button type="button" class="btn btn-sm btn-primary px-4 py-2 fw-medium shadow-sm" onclick="document.getElementById('sqlUpload').click()">
-                            <i class="bi bi-folder2-open me-1"></i> Pilih File SQL
-                        </button>
-                    </div>
-                    <div class="dz-file-preview d-none mt-2 p-3 bg-light rounded border border-dashed" id="filePreviewZone">
-                        <div class="d-flex align-items-center justify-content-center gap-3">
-                            <i class="bi bi-filetype-sql text-danger fs-2"></i>
-                            <div class="text-start">
-                                <div class="fw-bold text-dark id-filename" id="loadedFileName">-</div>
-                                <div class="text-muted fs-8 id-filesize" id="loadedFileSize">0 KB</div>
-                            </div>
-                            <span class="badge bg-success ms-2 p-2 d-flex align-items-center gap-1">
-                                <i class="bi bi-shield-check"></i> Ready to Parse
-                            </span>
-                        </div>
-                    </div>
+        <div class="col-md-8 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Tren Grafik Penjualan (Gross vs Netto)</div>
+                <div class="card-body">
+                    <canvas id="salesChart" style="max-height: 320px; width: 100%;"></canvas>
                 </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100 border-primary">
+                <div class="card-header bg-primary text-white fw-bold"><i class="bi bi-journal-text me-2"></i>Laporan Laba Rugi Kompak</div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0 align-middle">
+                        <tbody>
+                            <tr>
+                                <td class="ps-3 py-3"><strong>Pendapatan Kotor (Gross)</strong></td>
+                                <td class="pe-3 text-end fw-bold" id="lrGross">Rp 0</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-3 py-3 text-danger">Total Harga Hemat (Diskon)</td>
+                                <td class="pe-3 text-end text-danger fw-bold" id="lrDiskon">-Rp 0</td>
+                            </tr>
+                            <tr class="table-secondary">
+                                <td class="ps-3 py-3"><strong>Pendapatan Bersih (Netto)</strong></td>
+                                <td class="pe-3 text-end fw-bold" id="lrNetto">Rp 0</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-3 py-3 text-secondary">Harga Pokok Penjualan (HPP)</td>
+                                <td class="pe-3 text-end text-secondary fw-bold" id="lrHpp">-Rp 0</td>
+                            </tr>
+                            <tr class="table-success text-success fs-5">
+                                <td class="ps-3 py-3"><strong>ESTIMASI LABA KOTOR</strong></td>
+                                <td class="pe-3 text-end fw-bold" id="lrLaba">Rp 0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="erpTabs" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabTrans">Detail Item Transaksi (<span id="statTrans">0</span>)</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSale">Nota Penjualan Header (<span id="statSale">0</span>)</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabProd">Master Produk (<span id="statProd">0</span>)</button></li>
+    </ul>
+
+    <div class="tab-content card shadow-sm p-3 bg-white">
+        <div class="tab-pane fade show active" id="tabTrans">
+            <div class="table-responsive">
+                <table id="transTable" class="table table-bordered table-hover w-100">
+                    <thead><tr><th>No Urut</th><th>PLU</th><th>Deskripsi</th><th>Kategori</th><th>Harga</th><th>Qty</th><th>Disc%</th><th>Kasir</th><th>No Bill</th><th>Tanggal</th><th>Store</th><th>Total</th></tr></thead>
+                </table>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tabSale">
+            <div class="table-responsive">
+                <table id="saleTable" class="table table-bordered table-hover w-100">
+                    <thead><tr><th>No Faktur</th><th>Tanggal</th><th>Gross Struk</th><th>Diskon</th><th>Cash</th><th>Card/EDC</th><th>Kembali</th><th>Member ID</th><th>Store</th></tr></thead>
+                </table>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="tabProd">
+            <div class="table-responsive">
+                <table id="productTable" class="table table-bordered table-hover w-100">
+                    <thead><tr><th>PLU</th><th>Nama Item</th><th>Kategori</th><th>Harga Jual</th><th>Harga Beli (Cost)</th><th>PPN</th></tr></thead>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-    <div class="container-fluid py-4 px-3 px-lg-4">
+<div id="toastMsg" style="position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 6px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <span id="toastText">Notifikasi</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let transTable, saleTable, memberTable, productTable, eodTable;
+let salesChartInstance = null;
+
+$(document).ready(function() {
+    initDataTables();
+    setupEventListeners();
+});
+
+function initDataTables() {
+    const tableOptions = {
+        data: [],
+        pageLength: 10,
+        deferRender: true,
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Cari data...",
+            lengthMenu: "_MENU_ baris per halaman",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            paginate: { next: "➔", previous: "打" }
+        }
+    };
+
+    transTable = $('#transTable').DataTable({ ...tableOptions, columns: getTransColumns(), pageLength: 10 });
+    saleTable = $('#saleTable').DataTable({ ...tableOptions, columns: getSaleColumns() });
+    productTable = $('#productTable').DataTable({ ...tableOptions, columns: getProductColumns() });
+}
+
+function setupEventListeners() {
+    const $input = $('#sqlUpload');
+    const $dropzone = $('#dropzoneArea');
+
+    $input.on('change', function(e) { handleFileSelection(e.target.files[0]); });
+    $dropzone.on('dragover dragenter', function(e) { e.preventDefault(); $dropzone.addClass('dragover'); });
+    $dropzone.on('dragleave drop', function(e) { e.preventDefault(); $dropzone.removeClass('dragover'); });
+    $dropzone.on('drop', function(e) {
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) { $input[0].files = files; handleFileSelection(files[0]); }
+    });
+    $('#exportAllBtn').on('click', exportAllToExcel);
+}
+
+function handleFileSelection(file) {
+    if (!file) return;
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (fileExtension !== 'sql' && fileExtension !== 'txt') {
+        showToast("⚠️ Format salah! Gunakan file dump .sql atau .txt.", "danger");
+        return;
+    }
+
+    $('#loadedFileName').text(file.name);
+    $('#loadedFileSize').text((file.size / 1024).toFixed(2) + ' KB');
+    $('#filePreviewZone').removeClass('d-none'); 
+
+    const reader = new FileReader();
+    showToast(`Memproses Storage File: ${file.name}...`, 'info');
+
+    reader.onload = function(e) {
+        setTimeout(() => {
+            const parsed = parseSQLCopy(e.target.result);
+            calculateFinancialInsights(parsed);
+            updateUI(parsed);
+            showToast(`🚀 Dashboard Finansial Siap!`, 'success');
+            $('#exportAllBtn').prop('disabled', false);
+        }, 50);
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
+function parseSQLCopy(sqlText) {
+    const result = { c_trans: [], c_tsale: [], m_cust: [], m_loader: [], cek_eod: [] };
+    const lines = sqlText.split(/\r?\n/);
+    let currentTable = null, columns = [], inCopy = false, copyDataLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i]; if (!line) continue;
+        let copyMatch = line.match(/^COPY public\.(\w+)\s*\((.*?)\)\s+FROM stdin;/i);
+        if (copyMatch) {
+            currentTable = copyMatch[1].toLowerCase();
+            columns = copyMatch[2].split(',').map(c => c.trim().replace(/"/g, ''));
+            inCopy = true; copyDataLines = []; continue;
+        }
+        if (inCopy) {
+            let trimmed = line.trim();
+            if (trimmed === '\\ .' || trimmed === '\\.') {
+                if (result[currentTable]) { result[currentTable].push(...parseCopyDataRows(copyDataLines, columns, currentTable)); }
+                inCopy = false; currentTable = null; continue;
+            }
+            if (line.startsWith('--')) continue;
+            copyDataLines.push(line);
+        }
+    }
+    return result;
+}
+
+function parseCopyDataRows(rows, columns, tableName) {
+    const dataRows = [];
+    for (let row of rows) {
+        let values = [], current = '', inEscape = false;
+        for (let ch of row) {
+            if (ch === '\\' && !inEscape) { inEscape = true; current += ch; continue; }
+            if (ch === '\t' && !inEscape) { values.push(cleanNullValue(current)); current = ''; continue; }
+            current += ch; inEscape = false;
+        }
+        values.push(cleanNullValue(current));
+        if (values.length !== columns.length) continue;
         
-        <div class="row g-3 mb-4" id="statsRow">
-            <div class="col-xl-3 col-sm-6">
-                <div class="card card-analytics border-0 shadow-sm p-3">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-overline mb-1">Gross Merchandise Value (GMV)</p>
-                            <h3 id="statGmv" class="metric-value">Rp 0</h3>
-                        </div>
-                        <div class="metric-badge bg-primary-subtle text-primary"><i class="bi bi-currency-dollar"></i></div>
-                    </div>
-                    <div class="mt-2 text-muted fs-7">
-                        <span id="statTrans">0</span> Baris Transaksi Terproses
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <div class="card card-analytics border-0 shadow-sm p-3">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-overline mb-1">Estimated Gross Profit</p>
-                            <h3 id="statProfit" class="metric-value text-emerald">Rp 0</h3>
-                        </div>
-                        <div class="metric-badge bg-success-subtle text-success"><i class="bi bi-graph-up-arrow"></i></div>
-                    </div>
-                    <div class="mt-2 text-muted fs-7">
-                        Berdasarkan Harga Jual vs Beli Master
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <div class="card card-analytics border-0 shadow-sm p-3">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-overline mb-1">Member Contribution</p>
-                            <h3 id="statMemberRatio" class="metric-value">0%</h3>
-                        </div>
-                        <div class="metric-badge bg-info-subtle text-info"><i class="bi bi-people-fill"></i></div>
-                    </div>
-                    <div class="mt-2 text-muted fs-7">
-                        Dari Total <span id="statSale">0</span> Faktur Terbit
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-3 col-sm-6">
-                <div class="card card-analytics border-0 shadow-sm p-3">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-overline mb-1">Active Master Catalog</p>
-                            <h3 id="statProd" class="metric-value">0</h3>
-                        </div>
-                        <div class="metric-badge bg-warning-subtle text-warning"><i class="bi bi-box-seam-fill"></i></div>
-                    </div>
-                    <div class="mt-2 text-muted fs-7">
-                        Item Terdaftar di <span id="statActiveMember">0</span> Member Aktif
-                    </div>
-                </div>
-            </div>
-        </div>
+        let obj = {}; columns.forEach((col, idx) => { obj[col] = values[idx]; });
 
-        <div class="card card-workspace border-0 shadow-sm">
-            <div class="card-header bg-transparent border-bottom p-0">
-                <ul class="nav nav-erp-tabs" id="dataTab" role="tablist">
-                    <li class="nav-item"><button class="nav-link active" id="trans-tab" data-bs-toggle="tab" data-bs-target="#trans" type="button"><i class="bi bi-receipt"></i> Ledger Transaksi Detail (c_trans)</button></li>
-                    <li class="nav-item"><button class="nav-link" id="sale-tab" data-bs-toggle="tab" data-bs-target="#sale" type="button"><i class="bi bi-cash-stack"></i> Jurnal Penjualan Header (c_tsale)</button></li>
-                    <li class="nav-item"><button class="nav-link" id="member-tab" data-bs-toggle="tab" data-bs-target="#member" type="button"><i class="bi bi-person-vcard"></i> CRM Member (m_cust)</button></li>
-                    <li class="nav-item"><button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button"><i class="bi bi-grid-3x3-gap"></i> Inventori & Pricing (m_loader)</button></li>
-                    <li class="nav-item"><button class="nav-link" id="eod-tab" data-bs-toggle="tab" data-bs-target="#eod" type="button"><i class="bi bi-shield-check"></i> Audit Audit EOD (cek_eod)</button></li>
-                </ul>
-            </div>
-            <div class="card-body p-4">
-                <div class="tab-content" id="dataTabContent">
-                    <div class="tab-pane fade show active" id="trans" role="tabpanel">
-                        <div class="table-responsive"><table id="transTable" class="table table-erp table-hover w-100"><thead><tr><th>No</th><th>PLU</th><th>Deskripsi</th><th>Kategori</th><th>Harga</th><th>Qty</th><th>Disc%</th><th>Kasir</th><th>No Bill</th><th>Tanggal</th><th>Store</th><th>Total (Rp)</th></tr></thead><tbody></tbody></table></div>
-                    </div>
-                    <div class="tab-pane fade" id="sale" role="tabpanel">
-                        <div class="table-responsive"><table id="saleTable" class="table table-erp table-hover w-100"><thead><tr><th>No Faktur</th><th>Tanggal</th><th>Total Jual</th><th>Diskon</th><th>Tunai</th><th>Non-Tunai</th><th>Kembali</th><th>Member ID</th><th>Store</th></tr></thead><tbody></tbody></table></div>
-                    </div>
-                    <div class="tab-pane fade" id="member" role="tabpanel">
-                        <div class="table-responsive"><table id="memberTable" class="table table-erp table-hover w-100"><thead><tr><th>Kode Member</th><th>Nama Pelanggan</th><th>No Kartu</th><th>Alamat</th><th>Telepon</th><th>Poin</th><th>Status</th></tr></thead><tbody></tbody></table></div>
-                    </div>
-                    <div class="tab-pane fade" id="product" role="tabpanel">
-                        <div class="table-responsive"><table id="productTable" class="table table-erp table-hover w-100"><thead><tr><th>PLU</th><th>Deskripsi Produk</th><th>Kategori</th><th>Harga Jual</th><th>Harga Beli</th><th>PPN</th></tr></thead><tbody></tbody></table></div>
-                    </div>
-                    <div class="tab-pane fade" id="eod" role="tabpanel">
-                        <div class="table-responsive"><table id="eodTable" class="table table-erp table-hover w-100"><thead><tr><th>Kode Kasir</th><th>Tanggal Kerja</th><th>IP Terminal</th><th>Status Kerja</th></tr></thead><tbody></tbody></table></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        if (['c_trans', 'm_trans', 'trans'].includes(tableName)) {
+            obj.price = parseFloat(obj.price) || 0; obj.qty = parseFloat(obj.qty) || 0;
+            obj.total = obj.price * obj.qty; obj.disc = parseFloat(obj.disc) || 0;
+        }
+        if (tableName === 'c_tsale') {
+            obj.jum = parseFloat(obj.jum) || 0; obj.cash = parseFloat(obj.cash) || 0;
+            obj.card = parseFloat(obj.card) || 0; obj.kembali = parseFloat(obj.kembali) || 0;
+        }
+        if (tableName === 'm_cust') obj.point = parseInt(obj.point) || 0;
+        if (tableName === 'm_loader') { obj.price1 = parseFloat(obj.price1) || 0; obj.m_price = parseFloat(obj.m_price) || 0; }
+        dataRows.push(obj);
+    }
+    return dataRows;
+}
 
-        <footer class="mt-4 pt-3 text-center text-muted border-top">
-            <p class="m-0 fs-8">AmandaMart Integrated ERP Engine v2.0 • Client-Side Core Processing • Architecture optimized for Cloud</p>
-        </footer>
-    </div>
+function cleanNullValue(val) {
+    if (!val || val === '\\N' || val === 'NULL') return null;
+    if (val.startsWith('\\') && val.length > 1) return val.substring(1);
+    return val;
+}
 
-    <div id="toastMsg" class="toast-erp shadow" style="display: none;">
-        <div class="d-flex align-items-center gap-2">
-            <div id="toastIcon"><i class="bi bi-info-circle-fill"></i></div>
-            <div id="toastText" class="fw-medium">Memproses data...</div>
-        </div>
-    </div>
+function calculateFinancialInsights(data) {
+    let totalGmv = 0, totalGross = 0, totalDiskonfaktur = 0, totalHpp = 0;
+    let productCostMap = {};
+    data.m_loader.forEach(p => { productCostMap[p.plu] = parseFloat(p.m_price) || 0; });
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <script src="js/app.js"></script>
+    data.c_trans.forEach(t => { 
+        totalGmv += (t.total || 0); 
+        totalHpp += ((productCostMap[t.plu] || 0) * (parseFloat(t.qty) || 0));
+    });
+    data.c_tsale.forEach(s => {
+        totalGross += (parseFloat(s.jum) || 0);
+        totalDiskonfaktur += (parseFloat(s.disc) || 0);
+    });
+
+    let estimasiLabaKotor = totalGmv - totalHpp;
+
+    $('#statGmv').text(formatRupiah(totalGmv));
+    $('#statProfit').text(formatRupiah(estimasiLabaKotor));
+
+    let memberInvoices = data.c_tsale.filter(s => s.member && s.member !== '-' && s.member.trim() !== '').length;
+    let memberRatio = data.c_tsale.length > 0 ? Math.round((memberInvoices / data.c_tsale.length) * 100) : 0;
+    $('#statMemberRatio').text(memberRatio + '%');
+    $('#statActiveMember').text(data.m_cust.filter(m => m.f_aktif == '1' || m.f_aktif == 't').length);
+
+    // ISI TABEL INTERAKTIF LABA RUGI
+    $('#lrGross').text(formatRupiah(totalGross));
+    $('#lrDiskon').text('-' + formatRupiah(totalDiskonfaktur));
+    $('#lrNetto').text(formatRupiah(totalGmv));
+    $('#lrHpp').text('-' + formatRupiah(totalHpp));
+    $('#lrLaba').text(formatRupiah(estimasiLabaKotor));
+
+    renderSalesChart(data.c_tsale);
+}
+
+function renderSalesChart(salesData) {
+    let dailyData = {};
+    salesData.forEach(s => {
+        let tgl = s.tgl_f || 'Unknown';
+        if(tgl.length > 10) tgl = tgl.substring(0, 10); 
+        if (!dailyData[tgl]) dailyData[tgl] = { gross: 0, diskon: 0 };
+        dailyData[tgl].gross += (parseFloat(s.jum) || 0);
+        dailyData[tgl].diskon += (parseFloat(s.disc) || 0);
+    });
+
+    let sortedDates = Object.keys(dailyData).sort();
+    let grossValues = sortedDates.map(d => dailyData[d].gross);
+    let nettoValues = sortedDates.map(d => dailyData[d].gross - dailyData[d].diskon);
+
+    if (salesChartInstance !== null) salesChartInstance.destroy();
+
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    salesChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: sortedDates,
+            datasets: [
+                { label: 'Omset Gross', data: grossValues, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.05)', borderWidth: 2, tension: 0.2, fill: true },
+                { label: 'Omset Netto', data: nettoValues, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderWidth: 2, tension: 0.2, fill: true }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + v.toLocaleString('id-ID') } } } }
+    });
+}
+
+function updateUI(data) {
+    $('#statTrans').text(data.c_trans.length);
+    $('#statSale').text(data.c_tsale.length);
+    $('#statProd').text(data.m_loader.length);
+    transTable.clear().rows.add(data.c_trans).draw();
+    saleTable.clear().rows.add(data.c_tsale).draw();
+    productTable.clear().rows.add(data.m_loader).draw();
+    window.parsedDataGlobal = data;
+}
+
+function formatRupiah(val) {
+    if (val === undefined || val === null) return 'Rp 0';
+    let num = parseFloat(val); if (isNaN(num)) return val;
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+}
+
+function exportAllToExcel() {
+    if (!window.parsedDataGlobal) return;
+    const data = window.parsedDataGlobal;
+    const wb = XLSX.utils.book_new();
+    
+    // Sheet Ledger Detail
+    const transSheet = data.c_trans.map(t => {
+        let harga = parseFloat(t.price) || 0, qty = parseFloat(t.qty) || 0, disc = parseFloat(t.disc) || 0;
+        return { 'No Urut': t.no_urut, 'PLU': t.plu, 'Deskripsi': t.descp, 'Kategori': t.kategori, 'Harga Satuan': harga, 'Qty': qty, 'Diskon%': disc, 'Harga Hemat': (harga * qty) * (disc / 100), 'Kasir': t.kd_kasir, 'No Bill': t.no_bill, 'Tanggal': t.tgl_trs, 'Store': t.kd_store, 'Total Netto': t.total };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transSheet), "Ledger_Detail");
+    
+    // Sheet Jurnal Sales + Rumus Angka Bersih
+    let gGross = 0, gHemat = 0, gTunai = 0, gDebit = 0, gQris = 0, gKredit = 0;
+    const saleRows = data.c_tsale.map(s => {
+        let tipeCard = (s.j_card || s.card || '').toUpperCase().trim();
+        let gross = parseFloat(s.jum) || 0, hemat = parseFloat(s.disc) || 0, tunai = parseFloat(s.cash) || 0;
+        let debit = 0, qris = 0, kredit = 0;
+        let nCard = tunai === 0 || s.card ? (gross - tunai) : 0;
+        if(s.card && !isNaN(parseFloat(s.card))) nCard = parseFloat(s.card);
+
+        if (tipeCard.includes('DEBIT') || tipeCard.includes('BCA') || tipeCard.includes('MANDIRI') || tipeCard.includes('BRI')) debit = nCard;
+        else if (tipeCard.includes('QRIS') || tipeCard.includes('GOPAY') || tipeCard.includes('OVO') || tipeCard.includes('DANA')) qris = nCard;
+        else if (tipeCard.includes('KREDIT') || tipeCard.includes('CREDIT') || tipeCard.includes('CC')) kredit = nCard;
+        else if (tipeCard !== '-' && tipeCard !== '') debit = nCard;
+
+        gGross += gross; gHemat += hemat; gTunai += tunai; gDebit += debit; gQris += qris; gKredit += kredit;
+
+        return { 'No Faktur': s.no_fak, 'Tanggal': s.tgl_f, 'Total Gross': gross, 'Total Hemat': hemat, 'Pembayaran Tunai': tunai, 'Pembayaran Debit': debit, 'Pembayaran QRIS': qris, 'Pembayaran Kredit': kredit, 'Nama Kartu/Media': s.j_card || s.card || '-', 'Kembali': parseFloat(s.kembali) || 0, 'Member ID': s.member || '-' };
+    });
+
+    let gNonTunai = gDebit + gQris + gKredit;
+    let angkaBersih = gGross - gNonTunai - gHemat;
+
+    saleRows.push({}); saleRows.push({});
+    saleRows.push({ 'No Faktur': 'GRAND TOTAL / RINGKASAN', 'Total Gross': gGross, 'Total Hemat': gHemat, 'Pembayaran Tunai': gTunai, 'Pembayaran Debit': gDebit, 'Pembayaran QRIS': gQris, 'Pembayaran Kredit': gKredit, 'Nama Kartu/Media': `Total Non-Tunai: ${gNonTunai}` });
+    saleRows.push({ 'No Faktur': 'ANGKA BERSIH AKHIR', 'Tanggal': '(Gross - NonTunai - Hemat)', 'Total Gross': angkaBersih });
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(saleRows), "Jurnal_Sales_Header");
+    
+    // Sheet Master Produk
+    const prodSheet = data.m_loader.map(p => ({ 'PLU': p.plu, 'Nama Item': p.descp, 'Kategori': p.kategori, 'Harga Jual': p.price1, 'Harga Beli': p.m_price, 'PPN': p.ppn }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(prodSheet), "Inventory_Master");
+
+    XLSX.writeFile(wb, `AmandaMart_ERP_Financials_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast("Excel Berhasil Diekspor!", "success");
+}
+
+function showToast(msg, type = 'success') {
+    const toast = $('#toastMsg'); $('#toastText').text(msg);
+    toast.css('background', type === 'success' ? '#059669' : '#e11d48');
+    toast.fadeIn(150); setTimeout(() => toast.fadeOut(600), 3500);
+}
+
+function getTransColumns() { return [{ data: "no_urut", defaultContent: "-" }, { data: "plu", defaultContent: "-" }, { data: "descp", defaultContent: "-" }, { data: "kategori", defaultContent: "-" }, { data: "price", render: d => formatRupiah(d) }, { data: "qty" }, { data: "disc" }, { data: "kd_kasir" }, { data: "no_bill" }, { data: "tgl_trs" }, { data: "kd_store" }, { data: "total", render: d => formatRupiah(d) }]; }
+function getSaleColumns() { return [{ data: "no_fak", defaultContent: "-" }, { data: "tgl_f", defaultContent: "-" }, { data: "jum", render: d => formatRupiah(d) }, { data: "disc" }, { data: "cash", render: d => formatRupiah(d) }, { data: "card", defaultContent: "-" }, { data: "kembali", render: d => formatRupiah(d) }, { data: "member" }, { data: "kd_store" }]; }
+function getProductColumns() { return [{ data: "plu", defaultContent: "-" }, { data: "descp", defaultContent: "-" }, { data: "kategori", defaultContent: "-" }, { data: "price1", render: d => formatRupiah(d) }, { data: "m_price", render: d => formatRupiah(d) }, { data: "ppn", render: d => d == 1 ? "PPN" : "Non-PPN" }]; }
+</script>
 </body>
 </html>
