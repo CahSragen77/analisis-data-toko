@@ -29,16 +29,54 @@ function initDataTables() {
     memberTable = $('#memberTable').DataTable({ ...tableOptions, columns: getMemberColumns() });
     productTable = $('#productTable').DataTable({ ...tableOptions, columns: getProductColumns() });
     eodTable = $('#eodTable').DataTable({ ...tableOptions, columns: getEodColumns() });
-}
-
 function setupEventListeners() {
-    $('#sqlUpload').on('change', handleFileUpload);
+    const $input = $('#sqlUpload');
+    const $dropzone = $('#dropzoneArea');
+
+    // Jika user klik tombol pilih file manual
+    $input.on('change', function(e) {
+        handleFileSelection(e.target.files[0]);
+    });
+
+    // Efek visual saat file diseret di atas browser
+    $dropzone.on('dragover dragenter', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $dropzone.addClass('dragover');
+    });
+
+    $dropzone.on('dragleave drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $dropzone.removeClass('dragover');
+    });
+
+    // Jika file dilepas (dropped) di area kotak
+    $dropzone.on('drop', function(e) {
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            $input[0].files = files; 
+            handleFileSelection(files[0]);
+        }
+    });
+
     $('#exportAllBtn').on('click', exportAllToExcel);
 }
 
-function handleFileUpload(event) {
-    const file = event.target.files[0];
+function handleFileSelection(file) {
     if (!file) return;
+
+    // Cek apakah beneran file SQL atau TXT
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (fileExtension !== 'sql' && fileExtension !== 'txt') {
+        showToast("⚠️ Format ditolak! Pastikan file berformat .sql atau .txt dump.", "danger");
+        return;
+    }
+
+    // Tampilkan info nama & ukuran file di layar
+    $('#loadedFileName').text(file.name);
+    $('#loadedFileSize').text((file.size / 1024).toFixed(2) + ' KB');
+    $('#filePreviewZone').removeClass('d-none'); 
 
     const reader = new FileReader();
     showToast(`Membaca Storage Dump: ${file.name} ...`, 'info');
