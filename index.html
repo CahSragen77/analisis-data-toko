@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>AmandaMart | Dashboard Utama</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Chart.js untuk grafik -->
+    <!-- CSS DataTables (Bootstrap 5) -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- SheetJS untuk ekspor Excel -->
+    <!-- SheetJS -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- jQuery & DataTables -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <!-- jQuery (harus sebelum DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- SIDEBAR / MENU BAR -->
+        <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="logo">
                 <i class="icon-database"></i>
@@ -55,14 +57,14 @@
             </header>
 
             <!-- Stat Cards -->
-            <div class="stats-grid" id="statsGrid">
+            <div class="stats-grid">
                 <div class="stat-card"><h3>Transaksi</h3><p id="statTrans">0</p></div>
                 <div class="stat-card"><h3>Penjualan</h3><p id="statSale">0</p></div>
                 <div class="stat-card"><h3>Member</h3><p id="statMember">0</p></div>
                 <div class="stat-card"><h3>Produk</h3><p id="statProd">0</p></div>
             </div>
 
-            <!-- Grafik Ringkasan -->
+            <!-- Grafik -->
             <div class="charts-row">
                 <div class="chart-card">
                     <h3>Jumlah Transaksi per Hari</h3>
@@ -74,7 +76,7 @@
                 </div>
             </div>
 
-            <!-- Tab Menu untuk tabel -->
+            <!-- Tab Menu -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="trans">📋 Detail Transaksi</button>
                 <button class="tab-btn" data-tab="sale">💰 Penjualan Header</button>
@@ -83,11 +85,11 @@
                 <button class="tab-btn" data-tab="eod">⏱️ Log EOD</button>
             </div>
             <div class="tab-content">
-                <div class="tab-pane active" id="trans"><table id="transTable" class="data-table">...</table></div>
-                <div class="tab-pane" id="sale"><table id="saleTable" class="data-table">...</table></div>
-                <div class="tab-pane" id="member"><table id="memberTable" class="data-table">...</table></div>
-                <div class="tab-pane" id="product"><table id="productTable" class="data-table">...</table></div>
-                <div class="tab-pane" id="eod"><table id="eodTable" class="data-table">...</table></div>
+                <div class="tab-pane active" id="trans"><table id="transTable" class="data-table"><thead><tr><th>No</th><th>PLU</th><th>Deskripsi</th><th>Harga</th><th>Qty</th><th>Tanggal</th><th>Store</th></tr></thead><tbody></tbody></table></div>
+                <div class="tab-pane" id="sale"><table id="saleTable" class="data-table"><thead><tr><th>No Faktur</th><th>Tanggal</th><th>Total</th><th>Cash</th><th>Member</th></tr></thead><tbody></tbody></table></div>
+                <div class="tab-pane" id="member"><table id="memberTable" class="data-table"><thead><tr><th>Kode</th><th>Nama</th><th>No Kartu</th><th>Poin</th></tr></thead><tbody></tbody></table></div>
+                <div class="tab-pane" id="product"><table id="productTable" class="data-table"><thead><tr><th>PLU</th><th>Deskripsi</th><th>Kategori</th><th>Harga</th></tr></thead><tbody></tbody></table></div>
+                <div class="tab-pane" id="eod"><table id="eodTable" class="data-table"><thead><tr><th>Kasir</th><th>Tanggal</th><th>IP</th><th>Status</th></tr></thead><tbody></tbody></table></div>
             </div>
         </main>
     </div>
