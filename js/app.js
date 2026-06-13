@@ -241,12 +241,13 @@ function exportAllToExcel() {
     const data = window.parsedDataGlobal;
     const wb = XLSX.utils.book_new();
     
-    // 1. SHEET LEDGER DETAIL (Kolom Harga Hemat / Potongan Diskon)
+    // ==========================================
+    // 1. SHEET LEDGER DETAIL
+    // ==========================================
     const transSheet = data.c_trans.map(t => {
         let hargaMentah = parseFloat(t.price) || 0;
         let kuantitas = parseFloat(t.qty) || 0;
         let persenDiskon = parseFloat(t.disc) || 0;
-        
         let hargaHemat = (hargaMentah * kuantitas) * (persenDiskon / 100);
 
         return { 
@@ -267,58 +268,126 @@ function exportAllToExcel() {
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(transSheet), "Ledger_Detail");
     
-    // 2. SHEET JURNAL SALES HEADER (Pemisahan Metode Pembayaran & Total Hemat)
-    const saleSheet = data.c_tsale.map(s => {
+    // ==========================================
+    // 2. SHEET JURNAL SALES HEADER + LOGIKA ANGKA BERSIH
+    // ==========================================
+    // Variabel untuk menampung akumulasi Grand Total
+    let grandTotalGross = 0;
+    let grandTotalHemat = 0;
+    let grandTotalTunai = 0;
+    let grandTotalDebit = 0;
+    let grandTotalQris = 0;
+    let grandTotalKredit = 0;
+
+    // Mapping data transaksi sekaligus menghitung grand total secara real-time
+    const saleRows = data.c_tsale.map(s => {
         let tipeCard = (s.j_card || s.card || '').toUpperCase().trim();
         
-        let nilaiDebit = 0;
-        let nilaiQris = 0;
-        let nilaiKredit = 0;
-        let nilaiCardAsli = parseFloat(s.cash) === 0 || s.card ? (parseFloat(s.jum) - parseFloat(s.cash)) : 0; 
+        let gross = parseFloat(s.jum) || 0;
+        let hemat = parseFloat(s.disc) || 0;
+        let tunai = parseFloat(s.cash) || 0;
         
+        let debit = 0;
+        let qris = 0;
+        let kredit = 0;
+        
+        let nilaiCardAsli = tunai === 0 || s.card ? (gross - tunai) : 0; 
         if(s.card && !isNaN(parseFloat(s.card))) {
             nilaiCardAsli = parseFloat(s.card);
         }
 
+        // Klasifikasi tipe kartu non-tunai
         if (tipeCard.includes('DEBIT') || tipeCard.includes('BCA') || tipeCard.includes('MANDIRI') || tipeCard.includes('BRI')) {
-            nilaiDebit = nilaiCardAsli;
+            debit = nilaiCardAsli;
         } else if (tipeCard.includes('QRIS') || tipeCard.includes('GOPAY') || tipeCard.includes('OVO') || tipeCard.includes('DANA') || tipeCard.includes('LINKAJA')) {
-            nilaiQris = nilaiCardAsli;
+            qris = nilaiCardAsli;
         } else if (tipeCard.includes('KREDIT') || tipeCard.includes('CREDIT') || tipeCard.includes('CC')) {
-            nilaiKredit = nilaiCardAsli;
+            kredit = nilaiCardAsli;
         } else if (tipeCard !== '-' && tipeCard !== '') {
-            nilaiDebit = nilaiCardAsli;
+            debit = nilaiCardAsli; // Fallback ke debit jika tak dikenal
         }
+
+        // Tambahkan ke akumulasi Grand Total
+        grandTotalGross += gross;
+        grandTotalHemat += hemat;
+        grandTotalTunai += tunai;
+        grandTotalDebit += debit;
+        grandTotalQris += qris;
+        grandTotalKredit += kredit;
 
         return { 
             'No Faktur': s.no_fak, 
             'Tanggal': s.tgl_f, 
-            'Total Gross': s.jum, 
-            'Total Hemat (Diskon Faktur)': parseFloat(s.disc) || 0, 
-            'Pembayaran Tunai': parseFloat(s.cash) || 0, 
-            'Pembayaran Debit': nilaiDebit, 
-            'Pembayaran QRIS': nilaiQris, 
-            'Pembayaran Kredit': nilaiKredit, 
+            'Total Gross': gross, 
+            'Total Hemat': hemat, 
+            'Pembayaran Tunai': tunai, 
+            'Pembayaran Debit': debit, 
+            'Pembayaran QRIS': qris, 
+            'Pembayaran Kredit': kredit, 
             'Nama Kartu/Media': s.j_card || s.card || '-',
             'Kembali': parseFloat(s.kembali) || 0, 
             'Member ID': s.member || '-', 
             'Store': s.kd_store 
         };
     });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(saleSheet), "Jurnal_Sales_Header");
+
+    // Menghitung Grand Total Non-Tunai Gabungan
+    let grandTotalNonTunai = grandTotalDebit + grandTotalQris + grandTotalKredit;
     
-    // 3. SHEET CRM CUSTOMER
+    // RUMUS UTAMA ANDA: Grand Total Gross - Grand Total Non Tunai - Grand Total Hemat
+    let angkaBersihAkhir = grandTotalGross - grandTotalNonTunai - grandTotalHemat;
+
+    // Tambahkan 2 baris kosong sebagai pembatas visual di Excel
+    saleRows.push({}); 
+    saleRows.push({}); 
+
+    // Tambahkan baris BARU khusus untuk menampilkan rincian hasil kalkulasi Grand Total & Angka Bersih
+    saleRows.push({
+        'No Faktur': 'GRAND TOTAL / RINGKASAN',
+        'Tanggal': '',
+        'Total Gross': grandTotalGross,
+        'Total Hemat': grandTotalHemat,
+        'Pembayaran Tunai': grandTotalTunai,
+        'Pembayaran Debit': grandTotalDebit,
+        'Pembayaran QRIS': grandTotalQris,
+        'Pembayaran Kredit': grandTotalKredit,
+        'Nama Kartu/Media': `Total Non-Tunai: ${grandTotalNonTunai}`,
+        'Kembali': '',
+        'Member ID': '',
+        'Store': ''
+    });
+
+    saleRows.push({
+        'No Faktur': 'ANGKA BERSIH AKHIR',
+        'Tanggal': '(Gross - NonTunai - Hemat)',
+        'Total Gross': angkaBersihAkhir, // Disimpan di kolom Gross agar sejajar angka ke bawah
+        'Total Hemat': '',
+        'Pembayaran Tunai': '',
+        'Pembayaran Debit': '',
+        'Pembayaran QRIS': '',
+        'Pembayaran Kredit': '',
+        'Nama Kartu/Media': '',
+        'Kembali': '',
+        'Member ID': '',
+        'Store': ''
+    });
+
+    // Konversi array data yang sudah ditempeli rangkuman total ke sheet Excel
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(saleRows), "Jurnal_Sales_Header");
+    
+    // ==========================================
+    // 3. SHEET CRM CUSTOMER & INVENTORY MASTER
+    // ==========================================
     const memberSheet = data.m_cust.map(m => ({ 'ID': m.kode_member, 'Nama': m.nama_member, 'Kartu': m.no_kartu, 'Telepon': m.telpon, 'Poin': m.point, 'Status': m.f_aktif }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(memberSheet), "CRM_Customer");
     
-    // 4. SHEET INVENTORY MASTER
     const prodSheet = data.m_loader.map(p => ({ 'PLU': p.plu, 'Nama Item': p.descp, 'Kategori': p.kategori, 'Harga Jual': p.price1, 'Harga Beli': p.m_price, 'PPN': p.ppn }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(prodSheet), "Inventory_Master");
 
-    // Tulis file ke komputer user
+    // Unduh file langsung ke komputer pengguna
     XLSX.writeFile(wb, `AmandaMart_ERP_Financials_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast("Excel Berhasil Diekspor dengan Rincian Baru!", "success");
-} // <-- SEKARANG SUDAH BERSIH DAN AMAN
+    showToast("Excel Berhasil Diekspor dengan Hitungan Angka Bersih!", "success");
+}
 
 function showToast(msg, type = 'success') {
     const toast = $('#toastMsg');
