@@ -29,6 +29,8 @@ function initDataTables() {
     memberTable = $('#memberTable').DataTable({ ...tableOptions, columns: getMemberColumns() });
     productTable = $('#productTable').DataTable({ ...tableOptions, columns: getProductColumns() });
     eodTable = $('#eodTable').DataTable({ ...tableOptions, columns: getEodColumns() });
+}
+
 function setupEventListeners() {
     const $input = $('#sqlUpload');
     const $dropzone = $('#dropzoneArea');
@@ -61,7 +63,7 @@ function setupEventListeners() {
     });
 
     $('#exportAllBtn').on('click', exportAllToExcel);
-}
+} // <-- KORREKSI: Tanda kurung kurawal yang double di sini sudah dibersihkan
 
 function handleFileSelection(file) {
     if (!file) return;
@@ -91,7 +93,7 @@ function handleFileSelection(file) {
         }, 50);
     };
     reader.readAsText(file, 'UTF-8');
-}
+} 
 
 function parseSQLCopy(sqlText) {
     const result = { c_trans: [], c_tsale: [], m_cust: [], m_loader: [], cek_eod: [] };
@@ -156,7 +158,7 @@ function parseCopyDataRows(rows, columns, tableName) {
         let obj = {};
         columns.forEach((col, idx) => { obj[col] = values[idx]; });
 
-        // Financial Data Data Normalization
+        // Financial Data Normalization
         if (['c_trans', 'm_trans', 'trans'].includes(tableName)) {
             obj.price = parseFloat(obj.price) || 0;
             obj.qty = parseFloat(obj.qty) || 0;
@@ -187,7 +189,6 @@ function cleanNullValue(val) {
 
 /**
  * Pro Financial Analyzer Algorithm
- * Menghitung GMV, Estimasi Margin Keuntungan, dan Retensi CRM
  */
 function calculateFinancialInsights(data) {
     // 1. GMV & Transaksi
@@ -282,4 +283,36 @@ function showToast(msg, type = 'success') {
     toast.css('background', type === 'success' ? '#059669' : '#1e293b');
     toast.fadeIn(150);
     setTimeout(() => toast.fadeOut(600), 3500);
+}
+
+// KORREKSI Tambahan: Definisi struktur susunan kolom data tabel (wajib ada)
+function getTransColumns() {
+    return [
+        { title: "No" }, { title: "PLU" }, { title: "Deskripsi" }, { title: "Kategori" },
+        { title: "Harga" }, { title: "Qty" }, { title: "Disc%" }, { title: "Kasir" },
+        { title: "No Bill" }, { title: "Tanggal" }, { title: "Store" }, { title: "Total (Rp)" }
+    ];
+}
+function getSaleColumns() {
+    return [
+        { title: "No Faktur" }, { title: "Tanggal" }, { title: "Total Jual" }, { title: "Diskon" },
+        { title: "Tunai" }, { title: "Non-Tunai" }, { title: "Kembali" }, { title: "Member ID" }, { title: "Store" }
+    ];
+}
+function getMemberColumns() {
+    return [
+        { title: "Kode Member" }, { title: "Nama Pelanggan" }, { title: "No Kartu" },
+        { title: "Alamat" }, { title: "Telepon" }, { title: "Poin" }, { title: "Status" }
+    ];
+}
+function getProductColumns() {
+    return [
+        { title: "PLU" }, { title: "Deskripsi Produk" }, { title: "Kategori" },
+        { title: "Harga Jual" }, { title: "Harga Beli" }, { title: "PPN" }
+    ];
+}
+function getEodColumns() {
+    return [
+        { title: "Kode Kasir" }, { title: "Tanggal Kerja" }, { title: "IP Terminal" }, { title: "Status Kerja" }
+    ];
 }
