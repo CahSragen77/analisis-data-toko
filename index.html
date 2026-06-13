@@ -2,102 +2,148 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AmandaMart | Dashboard Utama</title>
-    <link rel="stylesheet" href="css/style.css">
-    <!-- CSS DataTables (Bootstrap 5) -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- SheetJS -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- jQuery (harus sebelum DataTables) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmandaMart ERP | Financial SQL Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="icon-database"></i>
-                <span>Amanda<span class="highlight">Mart</span></span>
-            </div>
-            <nav class="nav-menu">
-                <a href="index.html" class="nav-item active">
-                    <i class="icon-dashboard"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="laba-rugi.html" class="nav-item">
-                    <i class="icon-chart"></i>
-                    <span>Laba / Rugi</span>
-                </a>
-            </nav>
-            <div class="sidebar-footer">
-                <button id="clearDataBtn" class="btn-clear">
-                    <i class="icon-trash"></i> Clear Data
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-erp-sidebar sticky-top py-2 px-3 border-bottom border-secondary border-opacity-10">
+        <div class="container-fluid px-0">
+            <span class="navbar-brand d-flex align-items-center gap-2 m-0 fs-5">
+                <div class="brand-icon"><i class="bi bi-layers-half"></i></div>
+                <div>
+                    <strong class="text-white">AmandaMart</strong> 
+                    <span class="text-muted fs-7 fw-normal">| Financial SQL Analytics</span>
+                </div>
+            </span>
+            <div class="d-flex gap-2">
+                <label for="sqlUpload" class="btn btn-sm btn-outline-light d-flex align-items-center gap-2 px-3">
+                    <i class="bi bi-cloud-arrow-up-fill"></i> Import SQL Dump
+                </label>
+                <input type="file" id="sqlUpload" accept=".sql,.txt" style="display:none">
+                <button id="exportAllBtn" class="btn btn-sm btn-emerald d-flex align-items-center gap-2 px-3" disabled>
+                    <i class="bi bi-file-earmark-excel-fill"></i> Export Financial Report
                 </button>
             </div>
-        </aside>
+        </div>
+    </nav>
 
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-            <header class="top-bar">
-                <h1><i class="icon-dashboard"></i> Dashboard Utama</h1>
-                <div style="display: flex; gap: 12px;">
-                    <div class="upload-area" id="uploadArea">
-                        <i class="icon-upload"></i> Upload SQL Dump
-                        <input type="file" id="sqlUpload" accept=".sql,.txt" hidden>
+    <div class="container-fluid py-4 px-3 px-lg-4">
+        
+        <div class="row g-3 mb-4" id="statsRow">
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-analytics border-0 shadow-sm p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-overline mb-1">Gross Merchandise Value (GMV)</p>
+                            <h3 id="statGmv" class="metric-value">Rp 0</h3>
+                        </div>
+                        <div class="metric-badge bg-primary-subtle text-primary"><i class="bi bi-currency-dollar"></i></div>
                     </div>
-                    <button id="exportAllBtn" class="btn-excel-header" style="background:#1F7B4D; color:white; border:none; padding:12px 24px; border-radius:40px; cursor:pointer;">
-                        <i class="icon-excel"></i> Ekspor Semua ke Excel
-                    </button>
-                </div>
-            </header>
-
-            <!-- Stat Cards -->
-            <div class="stats-grid">
-                <div class="stat-card"><h3>Transaksi</h3><p id="statTrans">0</p></div>
-                <div class="stat-card"><h3>Penjualan</h3><p id="statSale">0</p></div>
-                <div class="stat-card"><h3>Member</h3><p id="statMember">0</p></div>
-                <div class="stat-card"><h3>Produk</h3><p id="statProd">0</p></div>
-            </div>
-
-            <!-- Grafik -->
-            <div class="charts-row">
-                <div class="chart-card">
-                    <h3>Jumlah Transaksi per Hari</h3>
-                    <canvas id="transChart"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>Metode Pembayaran</h3>
-                    <canvas id="paymentChart"></canvas>
+                    <div class="mt-2 text-muted fs-7">
+                        <span id="statTrans">0</span> Baris Transaksi Terproses
+                    </div>
                 </div>
             </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-analytics border-0 shadow-sm p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-overline mb-1">Estimated Gross Profit</p>
+                            <h3 id="statProfit" class="metric-value text-emerald">Rp 0</h3>
+                        </div>
+                        <div class="metric-badge bg-success-subtle text-success"><i class="bi bi-graph-up-arrow"></i></div>
+                    </div>
+                    <div class="mt-2 text-muted fs-7">
+                        Berdasarkan Harga Jual vs Beli Master
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-analytics border-0 shadow-sm p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-overline mb-1">Member Contribution</p>
+                            <h3 id="statMemberRatio" class="metric-value">0%</h3>
+                        </div>
+                        <div class="metric-badge bg-info-subtle text-info"><i class="bi bi-people-fill"></i></div>
+                    </div>
+                    <div class="mt-2 text-muted fs-7">
+                        Dari Total <span id="statSale">0</span> Faktur Terbit
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card card-analytics border-0 shadow-sm p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-overline mb-1">Active Master Catalog</p>
+                            <h3 id="statProd" class="metric-value">0</h3>
+                        </div>
+                        <div class="metric-badge bg-warning-subtle text-warning"><i class="bi bi-box-seam-fill"></i></div>
+                    </div>
+                    <div class="mt-2 text-muted fs-7">
+                        Item Terdaftar di <span id="statActiveMember">0</span> Member Aktif
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <!-- Tab Menu -->
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="trans">📋 Detail Transaksi</button>
-                <button class="tab-btn" data-tab="sale">💰 Penjualan Header</button>
-                <button class="tab-btn" data-tab="member">👥 Member</button>
-                <button class="tab-btn" data-tab="product">📦 Master Produk</button>
-                <button class="tab-btn" data-tab="eod">⏱️ Log EOD</button>
+        <div class="card card-workspace border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom p-0">
+                <ul class="nav nav-erp-tabs" id="dataTab" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" id="trans-tab" data-bs-toggle="tab" data-bs-target="#trans" type="button"><i class="bi bi-receipt"></i> Ledger Transaksi Detail (c_trans)</button></li>
+                    <li class="nav-item"><button class="nav-link" id="sale-tab" data-bs-toggle="tab" data-bs-target="#sale" type="button"><i class="bi bi-cash-stack"></i> Jurnal Penjualan Header (c_tsale)</button></li>
+                    <li class="nav-item"><button class="nav-link" id="member-tab" data-bs-toggle="tab" data-bs-target="#member" type="button"><i class="bi bi-person-vcard"></i> CRM Member (m_cust)</button></li>
+                    <li class="nav-item"><button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product" type="button"><i class="bi bi-grid-3x3-gap"></i> Inventori & Pricing (m_loader)</button></li>
+                    <li class="nav-item"><button class="nav-link" id="eod-tab" data-bs-toggle="tab" data-bs-target="#eod" type="button"><i class="bi bi-shield-check"></i> Audit Audit EOD (cek_eod)</button></li>
+                </ul>
             </div>
-            <div class="tab-content">
-                <div class="tab-pane active" id="trans"><table id="transTable" class="data-table"><thead><tr><th>No</th><th>PLU</th><th>Deskripsi</th><th>Harga</th><th>Qty</th><th>Tanggal</th><th>Store</th></tr></thead><tbody></tbody></table></div>
-                <div class="tab-pane" id="sale"><table id="saleTable" class="data-table"><thead><tr><th>No Faktur</th><th>Tanggal</th><th>Total</th><th>Cash</th><th>Member</th></tr></thead><tbody></tbody></table></div>
-                <div class="tab-pane" id="member"><table id="memberTable" class="data-table"><thead><tr><th>Kode</th><th>Nama</th><th>No Kartu</th><th>Poin</th></tr></thead><tbody></tbody></table></div>
-                <div class="tab-pane" id="product"><table id="productTable" class="data-table"><thead><tr><th>PLU</th><th>Deskripsi</th><th>Kategori</th><th>Harga</th></tr></thead><tbody></tbody></table></div>
-                <div class="tab-pane" id="eod"><table id="eodTable" class="data-table"><thead><tr><th>Kasir</th><th>Tanggal</th><th>IP</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+            <div class="card-body p-4">
+                <div class="tab-content" id="dataTabContent">
+                    <div class="tab-pane fade show active" id="trans" role="tabpanel">
+                        <div class="table-responsive"><table id="transTable" class="table table-erp table-hover w-100"><thead><tr><th>No</th><th>PLU</th><th>Deskripsi</th><th>Kategori</th><th>Harga</th><th>Qty</th><th>Disc%</th><th>Kasir</th><th>No Bill</th><th>Tanggal</th><th>Store</th><th>Total (Rp)</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                    <div class="tab-pane fade" id="sale" role="tabpanel">
+                        <div class="table-responsive"><table id="saleTable" class="table table-erp table-hover w-100"><thead><tr><th>No Faktur</th><th>Tanggal</th><th>Total Jual</th><th>Diskon</th><th>Tunai</th><th>Non-Tunai</th><th>Kembali</th><th>Member ID</th><th>Store</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                    <div class="tab-pane fade" id="member" role="tabpanel">
+                        <div class="table-responsive"><table id="memberTable" class="table table-erp table-hover w-100"><thead><tr><th>Kode Member</th><th>Nama Pelanggan</th><th>No Kartu</th><th>Alamat</th><th>Telepon</th><th>Poin</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                    <div class="tab-pane fade" id="product" role="tabpanel">
+                        <div class="table-responsive"><table id="productTable" class="table table-erp table-hover w-100"><thead><tr><th>PLU</th><th>Deskripsi Produk</th><th>Kategori</th><th>Harga Jual</th><th>Harga Beli</th><th>PPN</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                    <div class="tab-pane fade" id="eod" role="tabpanel">
+                        <div class="table-responsive"><table id="eodTable" class="table table-erp table-hover w-100"><thead><tr><th>Kode Kasir</th><th>Tanggal Kerja</th><th>IP Terminal</th><th>Status Kerja</th></tr></thead><tbody></tbody></table></div>
+                    </div>
+                </div>
             </div>
-        </main>
+        </div>
+
+        <footer class="mt-4 pt-3 text-center text-muted border-top">
+            <p class="m-0 fs-8">AmandaMart Integrated ERP Engine v2.0 • Client-Side Core Processing • Architecture optimized for Cloud</p>
+        </footer>
     </div>
 
-    <div id="toastMsg" class="toast-msg" style="display:none"></div>
+    <div id="toastMsg" class="toast-erp shadow" style="display: none;">
+        <div class="d-flex align-items-center gap-2">
+            <div id="toastIcon"><i class="bi bi-info-circle-fill"></i></div>
+            <div id="toastText" class="fw-medium">Memproses data...</div>
+        </div>
+    </div>
 
-    <script src="js/utils.js"></script>
-    <script src="js/sql-parser.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
