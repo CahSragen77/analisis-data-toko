@@ -24,6 +24,7 @@ function initDataTables() {
         }
     };
 
+    // Sinkronisasi konfigurasi kolom menggunakan format data objek asli Anda
     transTable = $('#transTable').DataTable({ ...tableOptions, columns: getTransColumns(), pageLength: 15 });
     saleTable = $('#saleTable').DataTable({ ...tableOptions, columns: getSaleColumns() });
     memberTable = $('#memberTable').DataTable({ ...tableOptions, columns: getMemberColumns() });
@@ -63,19 +64,19 @@ function setupEventListeners() {
     });
 
     $('#exportAllBtn').on('click', exportAllToExcel);
-} // <-- KORREKSI: Tanda kurung kurawal yang double di sini sudah dibersihkan
+} // Tanda kurung penutup ganda yang menyebabkan eror di sini sudah diperbaiki sepenuhnya!
 
 function handleFileSelection(file) {
     if (!file) return;
 
-    // Cek apakah beneran file SQL atau TXT
+    // Cek ekstensi file
     const fileExtension = file.name.split('.').pop().toLowerCase();
     if (fileExtension !== 'sql' && fileExtension !== 'txt') {
         showToast("⚠️ Format ditolak! Pastikan file berformat .sql atau .txt dump.", "danger");
         return;
     }
 
-    // Tampilkan info nama & ukuran file di layar
+    // Tampilkan informasi file ke UI
     $('#loadedFileName').text(file.name);
     $('#loadedFileSize').text((file.size / 1024).toFixed(2) + ' KB');
     $('#filePreviewZone').removeClass('d-none'); 
@@ -158,7 +159,7 @@ function parseCopyDataRows(rows, columns, tableName) {
         let obj = {};
         columns.forEach((col, idx) => { obj[col] = values[idx]; });
 
-        // Financial Data Normalization
+        // Normalisasi Data Keuangan & Angka
         if (['c_trans', 'm_trans', 'trans'].includes(tableName)) {
             obj.price = parseFloat(obj.price) || 0;
             obj.qty = parseFloat(obj.qty) || 0;
@@ -173,8 +174,8 @@ function parseCopyDataRows(rows, columns, tableName) {
         }
         if (tableName === 'm_cust') obj.point = parseInt(obj.point) || 0;
         if (tableName === 'm_loader') {
-            obj.price1 = parseFloat(obj.price1) || 0; // Harga Jual
-            obj.m_price = parseFloat(obj.m_price) || 0; // Harga Beli
+            obj.price1 = parseFloat(obj.price1) || 0; 
+            obj.m_price = parseFloat(obj.m_price) || 0; 
         }
         dataRows.push(obj);
     }
@@ -187,15 +188,10 @@ function cleanNullValue(val) {
     return val;
 }
 
-/**
- * Pro Financial Analyzer Algorithm
- */
 function calculateFinancialInsights(data) {
-    // 1. GMV & Transaksi
     let totalGmv = 0;
     data.c_trans.forEach(t => { totalGmv += (t.total || 0); });
 
-    // 2. Margin & Profit Analyzer Map
     let productCostMap = {};
     data.m_loader.forEach(p => { productCostMap[p.plu] = p.m_price || 0; });
 
@@ -206,14 +202,12 @@ function calculateFinancialInsights(data) {
         totalEstimatedProfit += itemProfit;
     });
 
-    // 3. CRM Ratio
     let memberInvoices = data.c_tsale.filter(s => s.member && s.member !== '-' && s.member.trim() !== '').length;
     let totalInvoices = data.c_tsale.length;
     let memberRatio = totalInvoices > 0 ? Math.round((memberInvoices / totalInvoices) * 100) : 0;
 
     let activeMembers = data.m_cust.filter(m => m.f_aktif == '1' || m.f_aktif == 'Ya' || m.f_aktif == 't').length;
 
-    // Render Metrics to Dashboard UI
     $('#statGmv').text(formatRupiah(totalGmv));
     $('#statProfit').text(formatRupiah(totalEstimatedProfit));
     $('#statMemberRatio').text(memberRatio + '%');
@@ -225,26 +219,12 @@ function updateUI(data) {
     $('#statSale').text(data.c_tsale.length);
     $('#statProd').text(data.m_loader.length);
     
-    // Refresh DataTables Elements
-    transTable.clear().rows.add(data.c_trans.map(t => [
-        t.no_urut, t.plu, t.descp || '-', t.kategori, formatRupiah(t.price), t.qty, t.disc, t.kd_kasir, t.no_bill, t.tgl_trs, t.kd_store, formatRupiah(t.total)
-    ])).draw();
-    
-    saleTable.clear().rows.add(data.c_tsale.map(s => [
-        s.no_fak, s.tgl_f, formatRupiah(s.jum), s.disc, formatRupiah(s.cash), s.j_card || s.card || '-', formatRupiah(s.kembali), s.member || '-', s.kd_store
-    ])).draw();
-    
-    memberTable.clear().rows.add(data.m_cust.map(m => [
-        m.kode_member, m.nama_member, m.no_kartu, (m.alamat || '').substring(0, 50), m.telpon, m.point, m.f_aktif == '1' ? '🟢 Active' : '⚪ Suspended'
-    ])).draw();
-    
-    productTable.clear().rows.add(data.m_loader.map(p => [
-        p.plu, p.descp, p.kategori, formatRupiah(p.price1), formatRupiah(p.m_price), p.ppn == 1 ? "PPN" : "Non-PPN"
-    ])).draw();
-    
-    eodTable.clear().rows.add(data.cek_eod.map(e => [
-        e.kd_ksr, e.date_ksr, e.ip_kasir, e.pakai == 2 ? "❌ Closed (EOD)" : "🟢 Open Ledger"
-    ])).draw();
+    // Perbaikan Penting: Menyesuaikan ulang agar DataTables menerima objek data mentah utuh secara real-time
+    transTable.clear().rows.add(data.c_trans).draw();
+    saleTable.clear().rows.add(data.c_tsale).draw();
+    memberTable.clear().rows.add(data.m_cust).draw();
+    productTable.clear().rows.add(data.m_loader).draw();
+    eodTable.clear().rows.add(data.cek_eod).draw();
     
     window.parsedDataGlobal = data;
 }
@@ -285,34 +265,34 @@ function showToast(msg, type = 'success') {
     setTimeout(() => toast.fadeOut(600), 3500);
 }
 
-// KORREKSI Tambahan: Definisi struktur susunan kolom data tabel (wajib ada)
+// Menghubungkan binding data kolom tabel agar terpetakan rapi ke layout visual HTML Anda
 function getTransColumns() {
     return [
-        { title: "No" }, { title: "PLU" }, { title: "Deskripsi" }, { title: "Kategori" },
-        { title: "Harga" }, { title: "Qty" }, { title: "Disc%" }, { title: "Kasir" },
-        { title: "No Bill" }, { title: "Tanggal" }, { title: "Store" }, { title: "Total (Rp)" }
+        { data: "no_urut", defaultContent: "-" }, { data: "plu", defaultContent: "-" }, { data: "descp", defaultContent: "-" }, { data: "kategori", defaultContent: "-" },
+        { data: "price", render: function(d){ return formatRupiah(d); } }, { data: "qty", defaultContent: "0" }, { data: "disc", defaultContent: "0" }, { data: "kd_kasir", defaultContent: "-" },
+        { data: "no_bill", defaultContent: "-" }, { data: "tgl_trs", defaultContent: "-" }, { data: "kd_store", defaultContent: "-" }, { data: "total", render: function(d){ return formatRupiah(d); } }
     ];
 }
 function getSaleColumns() {
     return [
-        { title: "No Faktur" }, { title: "Tanggal" }, { title: "Total Jual" }, { title: "Diskon" },
-        { title: "Tunai" }, { title: "Non-Tunai" }, { title: "Kembali" }, { title: "Member ID" }, { title: "Store" }
+        { data: "no_fak", defaultContent: "-" }, { data: "tgl_f", defaultContent: "-" }, { data: "jum", render: function(d){ return formatRupiah(d); } }, { data: "disc", defaultContent: "0" },
+        { data: "cash", render: function(d){ return formatRupiah(d); } }, { data: "card", defaultContent: "-" }, { data: "kembali", render: function(d){ return formatRupiah(d); } }, { data: "member", defaultContent: "-" }, { data: "kd_store", defaultContent: "-" }
     ];
 }
 function getMemberColumns() {
     return [
-        { title: "Kode Member" }, { title: "Nama Pelanggan" }, { title: "No Kartu" },
-        { title: "Alamat" }, { title: "Telepon" }, { title: "Poin" }, { title: "Status" }
+        { data: "kode_member", defaultContent: "-" }, { data: "nama_member", defaultContent: "-" }, { data: "no_kartu", defaultContent: "-" },
+        { data: "alamat", defaultContent: "-" }, { data: "telpon", defaultContent: "-" }, { data: "point", defaultContent: "0" }, { data: "f_aktif", render: function(d){ return d == '1' || d == 't' ? '🟢 Active' : '⚪ Suspended'; } }
     ];
 }
 function getProductColumns() {
     return [
-        { title: "PLU" }, { title: "Deskripsi Produk" }, { title: "Kategori" },
-        { title: "Harga Jual" }, { title: "Harga Beli" }, { title: "PPN" }
+        { data: "plu", defaultContent: "-" }, { data: "descp", defaultContent: "-" }, { data: "kategori", defaultContent: "-" },
+        { data: "price1", render: function(d){ return formatRupiah(d); } }, { data: "m_price", render: function(d){ return formatRupiah(d); } }, { data: "ppn", render: function(d){ return d == 1 ? "PPN" : "Non-PPN"; } }
     ];
 }
 function getEodColumns() {
     return [
-        { title: "Kode Kasir" }, { title: "Tanggal Kerja" }, { title: "IP Terminal" }, { title: "Status Kerja" }
+        { data: "kd_ksr", defaultContent: "-" }, { data: "date_ksr", defaultContent: "-" }, { data: "ip_kasir", defaultContent: "-" }, { data: "pakai", render: function(d){ return d == 2 ? "❌ Closed (EOD)" : "🟢 Open Ledger"; } }
     ];
 }
