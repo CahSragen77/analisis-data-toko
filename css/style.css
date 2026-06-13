@@ -1,0 +1,175 @@
+/* ERP Design Token Variables */
+:root {
+    --erp-bg: #f4f6f9;
+    --erp-sidebar-bg: #1e2640;
+    --erp-text-main: #334155;
+    --erp-text-muted: #64748b;
+    --erp-border: #e2e8f0;
+    --erp-emerald: #10b981;
+    --erp-emerald-hover: #059669;
+}
+
+body {
+    background-color: var(--erp-bg);
+    color: var(--erp-text-main);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 0.9rem;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Navbar Top Branding */
+.bg-erp-sidebar {
+    background-color: var(--erp-sidebar-bg) !important;
+}
+.brand-icon {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1rem;
+}
+
+/* Utilities Typo */
+.fs-7 { font-size: 0.8rem !important; }
+.fs-8 { font-size: 0.72rem !important; }
+.text-overline {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--erp-text-muted);
+}
+
+/* Financial Card Component */
+.card-analytics {
+    background-color: #ffffff;
+    border-radius: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.card-analytics:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+}
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+    margin-top: 2px;
+}
+.metric-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* Tab Management Control */
+.card-workspace {
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+.nav-erp-tabs {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--erp-border);
+    padding: 0 1rem;
+}
+.nav-erp-tabs .nav-link {
+    color: var(--erp-text-muted);
+    border: none;
+    padding: 1rem 1.25rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+}
+.nav-erp-tabs .nav-link:hover {
+    color: #0f172a;
+    background: rgba(0,0,0,0.02);
+}
+.nav-erp-tabs .nav-link.active {
+    color: #3b82f6 !important;
+    background: transparent;
+    border-bottom-color: #3b82f6;
+    font-weight: 600;
+}
+
+/* DataTables Global ERP Style */
+.table-erp {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+}
+.table-erp thead th {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.78rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid var(--erp-border) !important;
+}
+.table-erp tbody td {
+    padding: 10px 16px !important;
+    font-size: 0.85rem !important;
+    color: var(--erp-text-main);
+    border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle;
+}
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid var(--erp-border);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+}
+.dataTables_wrapper .dataTables_filter input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+}
+
+/* Button & UI Components */
+.btn-emerald {
+    background-color: var(--erp-emerald);
+    color: white;
+    border: none;
+}
+.btn-emerald:hover:not(:disabled) {
+    background-color: var(--erp-emerald-hover);
+    color: white;
+}
+.btn-emerald:disabled {
+    background-color: #a7f3d0;
+    color: #65a30d;
+    opacity: 0.6;
+}
+
+/* Custom ERP Toast */
+.toast-erp {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(1rem); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
